@@ -7,6 +7,8 @@ CMMC, HIPAA, and GDPR aware. By Machine Data Insights.
 
 ![Paydirt comparison view: original log on the left, scrubbed output on the right, with per-field highlights showing exactly what was redacted](docs/images/paydirt-screenshot.png)
 
+*Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*  
+
 ## Download
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
