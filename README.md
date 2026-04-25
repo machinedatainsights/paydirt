@@ -9,12 +9,19 @@ CMMC, HIPAA, and GDPR aware. By Machine Data Insights.
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
+**Browser tool and config template:**
+
 - [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - the browser tool. Save the file, double-click to open in your browser. No install required.
-- [log_scrubber.py](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubber.py) - the Python CLI. Requires Python 3.9 or later. No other dependencies.
 - [log_scrubbing_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubbing_config.csv) - the default configuration file (optional - both tools have built-in defaults).
 
-For the demo log file and companion config, see the
-[Try It Yourself](#try-it-yourself) section below.
+**Demo files** - click "Load custom config", load `paydirt_demo_config.csv`, then drop `paydirt_demo.log` onto the "Drop files to scrub" panel. Click "Comparison" to view all the redactions, then "Summary" to see an inventory of what was redacted by category.
+
+- [paydirt_demo.log](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo.log) - 25 sections covering every scrubbing category, with negative test cases that demonstrate what the scrubber correctly leaves alone.
+- [paydirt_demo_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo_config.csv) - companion config that targets Section 25 of the demo file (custom rules).
+
+**Python CLI for automation:**
+
+- [log_scrubber.py](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubber.py) - the Python CLI. Requires Python 3.9 or later. No other dependencies.
 
 ## What It Does
 
@@ -49,28 +56,23 @@ no dependencies at all for the browser tool (pure HTML/CSS/JS, runs offline).
 
 ## Try It Yourself
 
-A comprehensive demo log file is included in the project root:
-
-- **`paydirt_demo.log`** - a single file exercising every scrubbing category (25 sections covering IPs, emails, AWS keys, JWTs, credit cards, SSNs, Windows SIDs, CUI markings, and more), with negative test cases that demonstrate what the scrubber correctly leaves alone (well-known SIDs, invalid SSN ranges, public XML namespaces).
-- **`paydirt_demo_config.csv`** - a companion config that targets the file's "custom rules" section (SECTION 25), demonstrating the custom-rule workflow.
-
-To see the full scrubbing coverage in action:
+The demo files (`paydirt_demo.log` and `paydirt_demo_config.csv`) are also
+included at the project root if you'd rather work from a cloned copy of the
+repo. To exercise the demo from the command line:
 
 ```bash
-# Using the Python CLI:
+# Built-in patterns only:
 python log_scrubber.py paydirt_demo.log
-# or with the companion config for SECTION 25 custom rules:
-python log_scrubber.py paydirt_demo.log --config paydirt_demo_config.csv
 
-# Using Paydirt (browser-based):
-# 1. Open Paydirt.html in your browser
-# 2. Drop paydirt_demo.log onto the drop zone
-# 3. Click the "Comparison" tab to see every redaction side-by-side
-# 4. (Optional) Load paydirt_demo_config.csv via "Load custom config"
-#    and re-drop the demo file to see SECTION 25 also redact
+# Built-in patterns plus the companion config (lights up Section 25):
+python log_scrubber.py paydirt_demo.log --config paydirt_demo_config.csv
 ```
 
-Each section of the demo file is marked with a `# SECTION N:` header describing what it demonstrates. Reviewers evaluating the tool for compliance purposes can inspect each section's expected behavior, run the scrubber, and visually confirm that every category of sensitive data gets correctly redacted (and that negative test cases remain untouched).
+Each section of the demo file is marked with a `# SECTION N:` header
+describing what it demonstrates. Reviewers evaluating the tool for compliance
+purposes can inspect each section's expected behavior, run the scrubber, and
+visually confirm that every category of sensitive data gets correctly
+redacted (and that negative test cases remain untouched).
 
 ## Repository Layout
 
