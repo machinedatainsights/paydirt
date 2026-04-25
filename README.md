@@ -510,10 +510,18 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ## Version History
 
+### v1.2.0
+- April 24, 2026
+- **First public release** under the Apache License 2.0.
+- **Paydirt browser tool** (`Paydirt.html`): self-contained, single-file scrubber that runs entirely in your browser. Drop a file, get a sanitized version. No install, no network calls, no data leaves your machine. Per-field highlighting in the comparison view, summary tab with category breakdowns, downloadable template config.
+- **Paydirt and the CLI ship together** as paired tools using the same scrubbing algorithm and config format. Parity verified by `shared-tests/run_parity.py`.
+- **Demo fixture** (`paydirt_demo.log` plus companion config) covering all 25 categories the scrubber knows, with negative test cases for false-positive verification.
+- **Reorganized repository layout** with downloadable artifacts at the project root and developer assets in subdirectories.
+
 ### v1.1.0
-- 04/20/2026
+- April 20, 2026
 - **CUI marking detection** (CMMC / NIST SP 800-171): banner, portion, legacy, and adjacent markings trigger full-value redaction with metadata-preserving placeholders.
-- **Credential & token patterns**: AWS keys, GitHub PATs, Slack tokens, Stripe keys, JWTs, Google API keys, PEM private key blocks, HTTP Authorization headers, URL query-string credentials.
+- **Credential and token patterns**: AWS keys, GitHub PATs, Slack tokens, Stripe keys, JWTs, Google API keys, PEM private key blocks, HTTP Authorization headers, URL query-string credentials.
 - **PII patterns**: SSN (valid ranges only), Luhn-validated credit cards, Luhn-validated NPIs, formatted phone numbers, Windows SIDs (user SIDs only, well-known SIDs preserved).
 - **Nested `@json` path support**: rules like `userIdentity.arn` now match correctly. Unqualified rules retain v1 behavior.
 - **Auto-mode detection**: mode positional argument is now optional; the scrubber inspects file headers to dispatch.
@@ -521,11 +529,12 @@ incorporate similar improvements into the canonical version when appropriate.
 - **Library API**: added `Scrubber` class for use as an importable module. Functional API (`scrub_text`, `parse_scrubbing_config`) is backward compatible.
 - **New flags**: `--no-cui`, `--version`.
 
-### v1.0.0 (Original)
-- 03/13/2026
+### v1.0.0
+- March 13, 2026
 - Initial release
 
 ---
 
-**Machine Data Insights Inc. *"There's Gold In That Data!"™***  
-<a href="https://machinedatainsights.com" target="_blank">machinedatainsights.com</a>
+**Machine Data Insights Inc.** *"There's Gold In That Data!"(TM)* | [machinedatainsights.com](https://machinedatainsights.com)  
+  
+*Version 1.2.0 - April 24, 2026*

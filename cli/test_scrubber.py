@@ -3,7 +3,7 @@
 # Copyright 2026 Machine Data Insights Inc.
 # https://machinedatainsights.com
 """
-Test suite for log_scrubber v1.1.0.
+Test suite for log_scrubber v1.2.0.
 
 Covers:
  - Nested @json path bug fix (the original issue)

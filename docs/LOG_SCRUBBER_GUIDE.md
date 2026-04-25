@@ -341,30 +341,8 @@ python log_scrubber.py paydirt_demo.log
 
 ## Version History
 
-### v1.1.0 - 04/20/2026
-
-- **CUI marking detection** (CMMC / NIST SP 800-171): banner, portion,
-  legacy, and adjacent markings trigger full-value redaction with
-  metadata-preserving placeholders.
-- **Credential and token patterns**: AWS keys, GitHub PATs, Slack tokens,
-  Stripe keys, JWTs, Google API keys, PEM private key blocks, HTTP
-  Authorization headers, URL query-string credentials.
-- **PII patterns**: SSN (valid ranges only), Luhn-validated credit cards,
-  Luhn-validated NPIs, formatted phone numbers, Windows SIDs (user SIDs
-  only, well-known SIDs preserved).
-- **Nested `@json` path support**: rules like `userIdentity.arn` now match
-  correctly. Unqualified rules retain v1 behavior.
-- **Auto-mode detection**: mode positional argument is now optional; the
-  scrubber inspects file headers to dispatch.
-- **Batch processing**: multiple inputs and shell glob patterns supported.
-- **Library API**: added `Scrubber` class for use as an importable module.
-  Functional API (`scrub_text`, `parse_scrubbing_config`) is backward
-  compatible.
-- **New flags**: `--no-cui`, `--version`.
-
-### v1.0.0 - 03/13/2026
-
-- Initial release
+For the full version history, see the
+[Version History section in the project README](../README.md#version-history).
 
 ---
 
@@ -377,5 +355,6 @@ terms.
 
 ---
 
-**Machine Data Insights Inc.** *"There's Gold In That Data!"(TM)*
-[machinedatainsights.com](https://machinedatainsights.com)
+**Machine Data Insights Inc.** *"There's Gold In That Data!"(TM)* | [machinedatainsights.com](https://machinedatainsights.com)  
+  
+*Version 1.2.0 - April 24, 2026*
