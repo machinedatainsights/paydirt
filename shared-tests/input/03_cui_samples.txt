@@ -1,0 +1,5 @@
+CUI//SP-PRVCY Employee record: John Smith DOB 01/15/1980
+(U//FOUO) Contract award to vendor XYZ on 2026-01-15
+ITAR-controlled technical data attached
+Normal log line with no CUI markings here
+CONTROLLED//SP-PROPIN proprietary info follows

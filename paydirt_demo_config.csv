@@ -1,0 +1,41 @@
+# Log Scrubbing Configuration - DEMO COMPANION
+# For use with paydirt_demo.log
+# by Machine Data Insights Inc.
+#
+# This config is paired with paydirt_demo.log to demonstrate custom-rule
+# scrubbing. Load this in Paydirt via "Load custom config" and then drop
+# paydirt_demo.log - SECTION 25 entries will now redact with these rules.
+#
+# When loaded, the scrubbed output shows how Paydirt combines three layers
+# of redaction:
+#   1. Built-in regex patterns (IPs, emails, tokens, CUI markings, etc.)
+#   2. @json field rules from the default config (accountId, sourceIPAddress)
+#   3. Text substitution rules from THIS config (hostnames, codenames, IDs)
+#
+# Real-world configs grow organically as users identify the specific
+# identifiers their organizations treat as sensitive. This file is just a
+# starting point illustrating the workflow.
+# ============================================================================
+
+# Demo hostnames
+MDI-LEGION,single,HOST-REDACTED
+dc-east-01,single,DC-REDACTED
+
+# Demo project codename
+PROJECT-THUNDERBOLT,single,PROJECT-REDACTED
+
+# Demo internal ticket and license ID prefixes
+TKT-MDI-,single,TKT-REDACTED-
+SERIAL-MDI-,single,SERIAL-REDACTED-
+
+# Demo Kerberos realm
+@CORP.LOCAL,single,@EXAMPLE.LOCAL
+
+# ============================================================================
+# CUSTOM CONFIGURATIONS
+# Add your organization-specific rules below. Some examples to get started:
+#
+#   MYCOMPANY-HOST01,single,HOST-REDACTED
+#   @mycompany.internal,single,@example.com
+#   @json,myCustomFieldName,REDACTED_VALUE
+# ============================================================================

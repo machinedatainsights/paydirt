@@ -1,0 +1,6 @@
+Jan 1 10:00:00 host1.acme.com sshd: Accepted password for bob from 192.168.1.50
+Jan 1 10:00:05 authd: API key AKIAIOSFODNN7EXAMPLE used by admin@acme.com
+Jan 1 10:00:10 FOUO - internal memo about contract
+Jan 1 10:00:15 host1 app: card=4532015112830366 ssn=123-45-6789 phone=(555) 234-5678
+Jan 1 10:00:20 host1 auth: user logged in from IP 203.0.113.42 with MAC 00:1A:2B:3C:4D:5E
+Jan 1 10:00:25 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c

@@ -1,0 +1,3368 @@
+<!DOCTYPE html>
+<!--
+  Paydirt - Log Scrubber
+  Built: 2026-04-25 13:42:55
+  Machine Data Insights - machinedatainsights.com
+
+  This file runs entirely in your browser.
+  Your data never leaves your device.
+-->
+
+<!--
+  SPDX-License-Identifier: Apache-2.0
+  Copyright 2026 Machine Data Insights Inc.
+  https://machinedatainsights.com
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Strict Content Security Policy: no external resources, no inline event
+      handlers, no eval. Everything loads from 'self' only.
+
+      When hosted on a web server, the server should ALSO set these headers:
+        Content-Security-Policy: frame-ancestors 'none'
+        X-Frame-Options: DENY
+        X-Content-Type-Options: nosniff
+      The frame-ancestors directive cannot be set via a meta tag (browsers
+      ignore it), so iframe-embedding protection is a hosting concern.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'self';">
+    <title>Paydirt - Log Scrubber</title>
+    <!--
+      Favicon: same glyph as the header logo, inlined as an SVG data URL.
+      No network request. Works in Firefox and Chromium. Safari ignores SVG
+      favicons (it wants .ico/.png), so tab icon silently falls back to
+      generic - acceptable trade-off given no-external-resources constraint.
+    -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect x='2' y='2' width='44' height='44' rx='6' fill='%231F2328'/><path d='M14 12 L14 36 M14 12 L28 12 Q36 12 36 20 Q36 28 28 28 L14 28' stroke='%23D4A017' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='36' cy='34' r='2.5' fill='%23D4A017'/></svg>">
+    <style>
+/* SPDX-License-Identifier: Apache-2.0
+ * Copyright 2026 Machine Data Insights Inc.
+ * https://machinedatainsights.com
+ */
+/* ==========================================================================
+   Paydirt - Log Scrubber
+   Aesthetic: refined minimalism, warm neutrals, gold accent.
+   No external resources (CSP-safe).
+   ========================================================================== */
+
+/* ---- Design tokens -------------------------------------------------------- */
+
+:root {
+    /* Palette - rooted in MDI's gold/mining branding but restrained */
+    --color-gold: #B8860B;            /* primary accent, darkened goldenrod */
+    --color-gold-light: #D4A017;      /* lighter accent for hover */
+    --color-gold-bg: #FFF8E7;         /* subtle gold background tint */
+
+    --color-bg: #FAFAF7;              /* page background, warm off-white */
+    --color-surface: #FFFFFF;         /* card backgrounds */
+    --color-surface-alt: #F5F5F0;     /* muted surface for secondary areas */
+
+    --color-text: #1F2328;            /* primary text, near-black with warmth */
+    --color-text-muted: #6B7280;      /* secondary text */
+    --color-text-subtle: #9CA3AF;     /* tertiary / hints */
+
+    --color-border: #E5E7EB;          /* default border */
+    --color-border-strong: #D1D5DB;   /* emphasized border (drop zone) */
+
+    --color-token-bg: #FEF3C7;        /* token redaction highlight */
+    --color-token-accent: #92400E;    /* token redaction text accent */
+    --color-cui-bg: #FED7AA;          /* CUI redaction highlight (distinct) */
+    --color-cui-accent: #9A3412;      /* CUI redaction text accent */
+
+    --color-success-bg: #D1FAE5;      /* clean-file notice */
+    --color-success-text: #065F46;
+
+    --color-error-bg: #FEE2E2;
+    --color-error-text: #991B1B;
+
+    /* Typography - chosen for legibility + slight editorial character,
+       from within the system-font universe to preserve CSP strictness.
+       Serif headings lend the tool a more "serious" professional feel;
+       sans body stays readable. */
+    --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-serif: ui-serif, Georgia, "Iowan Old Style", "Apple Garamond", "Palatino Linotype", "Palatino", "Times New Roman", serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+
+    /* Spacing scale */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-8: 3rem;
+
+    /* Shape */
+    --radius-sm: 4px;
+    --radius: 6px;
+    --radius-lg: 10px;
+
+    /* Shadows - restrained, single layer */
+    --shadow-sm: 0 1px 2px rgba(31, 35, 40, 0.04);
+    --shadow: 0 2px 8px rgba(31, 35, 40, 0.06);
+}
+
+/* ---- Base ----------------------------------------------------------------- */
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+}
+
+a {
+    color: var(--color-gold);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+button {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/* Accessibility helper */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---- Header --------------------------------------------------------------- */
+
+.site-header {
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.brand-name {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.brand-tagline {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.version-pill {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-alt);
+    padding: 2px 8px;
+    border-radius: 100px;
+    border: 1px solid var(--color-border);
+}
+
+.offline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    color: var(--color-success-text);
+    background-color: var(--color-success-bg);
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-weight: 500;
+    cursor: help;
+}
+
+/* ---- Page layout ---------------------------------------------------------- */
+
+.page {
+    flex: 1;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.section-heading {
+    font-size: 1.1rem;
+    margin: 0 0 var(--space-3) 0;
+    color: var(--color-text);
+}
+
+/* ---- Input section ------------------------------------------------------- */
+
+.drop-zone {
+    background-color: var(--color-surface);
+    border: 2px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8) var(--space-6);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+    outline: none;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible {
+    border-color: var(--color-gold);
+    background-color: var(--color-gold-bg);
+}
+
+.drop-zone.drag-active {
+    border-color: var(--color-gold);
+    background-color: var(--color-gold-bg);
+    border-style: solid;
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    pointer-events: none;
+}
+
+.drop-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--color-text-muted);
+}
+
+.drop-zone:hover .drop-icon,
+.drop-zone.drag-active .drop-icon {
+    color: var(--color-gold);
+}
+
+.drop-zone-primary {
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.drop-zone-secondary {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    pointer-events: auto;  /* let the link button be clickable */
+}
+
+.drop-zone-hint {
+    color: var(--color-text-subtle);
+    font-size: 0.82rem;
+    margin-top: var(--space-1);
+}
+
+/* Paste area */
+
+.paste-details {
+    margin-top: var(--space-3);
+}
+
+.paste-details summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 0.88rem;
+    padding: var(--space-2) 0;
+    user-select: none;
+}
+
+.paste-details summary:hover {
+    color: var(--color-gold);
+}
+
+.paste-body {
+    margin-top: var(--space-2);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+}
+
+#paste-input {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    resize: vertical;
+    outline: none;
+}
+
+#paste-input:focus {
+    border-color: var(--color-gold);
+}
+
+.paste-actions {
+    margin-top: var(--space-2);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ---- Config section ------------------------------------------------------ */
+
+.config-status {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+}
+
+.config-line {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+    font-size: 0.88rem;
+}
+
+.config-label {
+    color: var(--color-text-muted);
+    min-width: 110px;
+}
+
+.config-value {
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+
+.config-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+}
+
+.remember-config {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.remember-config input {
+    cursor: pointer;
+}
+
+/* ---- Buttons ------------------------------------------------------------- */
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-gold);
+    cursor: pointer;
+    font-size: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.link-button:hover {
+    color: var(--color-gold-light);
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.12s;
+}
+
+.secondary-button:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+    background-color: var(--color-gold-bg);
+}
+
+.download-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background-color: var(--color-gold);
+    color: white;
+    border: 1px solid var(--color-gold);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.12s;
+}
+
+.download-button:hover {
+    background-color: var(--color-gold-light);
+    border-color: var(--color-gold-light);
+}
+
+.icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    color: var(--color-text-muted);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.icon-button:hover {
+    color: var(--color-text);
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-border);
+}
+
+/* ---- Results ------------------------------------------------------------- */
+
+.results-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.results-empty {
+    background-color: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.results-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.results-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Result card */
+
+.result-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.result-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface-alt);
+}
+
+.result-card-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;  /* allow filename truncation */
+}
+
+.file-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.result-filename {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--color-text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.result-size {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.result-card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+/* Tabs */
+
+.result-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.result-tab {
+    background: none;
+    border: none;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: -1px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+}
+
+.result-tab:hover {
+    color: var(--color-text);
+}
+
+.result-tab[aria-selected="true"] {
+    color: var(--color-gold);
+    border-bottom-color: var(--color-gold);
+}
+
+/* Tab panels */
+
+.result-tab-panel {
+    padding: 0;
+}
+
+.result-pre {
+    margin: 0;
+    padding: var(--space-4);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+    white-space: pre;
+}
+
+/* Comparison panes */
+
+.comparison-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.comparison-column {
+    min-width: 0;  /* allow content overflow to scroll instead of expanding */
+    border-left: 1px solid var(--color-border);
+}
+
+.comparison-column:first-child {
+    border-left: none;
+}
+
+.comparison-header {
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-alt);
+    border-bottom: 1px solid var(--color-border);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.comparison-pane {
+    padding: var(--space-3) 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    max-height: 600px;
+    overflow: auto;
+    outline: none;
+}
+
+.comparison-pane:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--color-gold);
+}
+
+.comparison-line {
+    display: block;
+    padding: 0 var(--space-4);
+    white-space: pre;
+    min-height: 1.6em;
+}
+
+.comparison-line.line-modified {
+    background-color: transparent;
+    border-left: 3px solid var(--color-token-bg);
+    padding-left: calc(var(--space-4) - 3px);
+}
+
+.comparison-line.line-cui {
+    background-color: transparent;
+    border-left: 3px solid var(--color-cui-bg);
+    padding-left: calc(var(--space-4) - 3px);
+}
+
+/* Per-field (character-level) highlights. These are the primary visual
+   signal; the row-level border is a secondary wayfinding aid. */
+.hl {
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+.hl-pii {
+    background-color: var(--color-token-bg);
+    color: var(--color-token-accent);
+    box-shadow: 0 0 0 1px rgba(146, 64, 14, 0.15);
+}
+
+.hl-cui {
+    background-color: var(--color-cui-bg);
+    color: var(--color-cui-accent);
+    box-shadow: 0 0 0 1px rgba(154, 52, 18, 0.2);
+}
+
+.hl-custom {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    box-shadow: 0 0 0 1px rgba(153, 27, 27, 0.15);
+}
+
+/* Comparison legend */
+
+.comparison-legend {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-alt);
+    border-top: 1px solid var(--color-border);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid var(--color-border);
+}
+
+.swatch-token {
+    background-color: var(--color-token-bg);
+}
+
+.swatch-cui {
+    background-color: var(--color-cui-bg);
+}
+
+.swatch-custom {
+    background-color: #FEE2E2;
+}
+
+/* Summary panel */
+
+.summary-content {
+    padding: var(--space-4);
+    font-size: 0.9rem;
+}
+
+.summary-group {
+    margin-bottom: var(--space-4);
+}
+
+.summary-group:last-child {
+    margin-bottom: 0;
+}
+
+.summary-group-title {
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.summary-counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-2);
+}
+
+.summary-count {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-surface-alt);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+.summary-count-label {
+    color: var(--color-text-muted);
+}
+
+.summary-count-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.summary-clean-notice {
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+}
+
+/* Nudge panel for "you probably need a custom config" guidance */
+.summary-nudge {
+    margin-top: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-gold-bg);
+    border: 1px solid rgba(184, 134, 11, 0.25);
+    border-left: 3px solid var(--color-gold);
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    color: #78350F;  /* deeper gold-brown for text readability */
+    line-height: 1.5;
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+}
+
+.summary-nudge-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--color-gold);
+    color: white;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+}
+
+.summary-nudge-text {
+    flex: 1;
+}
+
+.summary-meta {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.summary-meta-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.summary-meta-item-label {
+    color: var(--color-text-subtle);
+}
+
+.summary-meta-item-value {
+    color: var(--color-text);
+    font-family: var(--font-mono);
+}
+
+/* Truncation notice */
+
+.truncation-notice {
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--color-gold-bg);
+    color: var(--color-token-accent);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Error state */
+
+.result-card.has-error .result-card-header {
+    background-color: var(--color-error-bg);
+}
+
+.error-content {
+    padding: var(--space-4);
+    color: var(--color-error-text);
+    font-size: 0.9rem;
+}
+
+/* ---- Processing overlay -------------------------------------------------- */
+
+/* The [hidden] attribute normally sets display:none, but specific display
+   values in other rules override it. Make the hidden state explicit. */
+[hidden] {
+    display: none !important;
+}
+
+.processing-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(31, 35, 40, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.processing-content {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-6);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 240px;
+}
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.processing-text {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* ---- Footer -------------------------------------------------------------- */
+
+.site-footer {
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-6);
+}
+
+.footer-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+}
+
+.footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.footer-tagline {
+    color: var(--color-gold);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.footer-license {
+    font-size: 0.76rem;
+    color: var(--color-text-subtle);
+}
+
+.footer-license a {
+    color: var(--color-text-muted);
+}
+
+.footer-license a:hover {
+    color: var(--color-gold);
+}
+
+.footer-sep {
+    color: var(--color-text-subtle);
+}
+
+/* ---- Responsive ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .header-inner {
+        padding: var(--space-3) var(--space-4);
+        flex-wrap: wrap;
+    }
+
+    .page {
+        padding: var(--space-4);
+        gap: var(--space-4);
+    }
+
+    .comparison-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .comparison-column {
+        border-left: none;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .comparison-column:first-child {
+        border-top: none;
+    }
+
+    .drop-zone {
+        padding: var(--space-5) var(--space-4);
+    }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <div class="brand">
+            <!-- SVG logo placeholder. MDI can swap this for their logo.
+                 Keeping it SVG-inline means no external image loads and
+                 CSP stays strict. Chosen visual: stylized "P" with a subtle
+                 gold accent, mining pickaxe implied in the negative space. -->
+            <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+                <rect x="2" y="2" width="44" height="44" rx="6" fill="#1F2328"/>
+                <path d="M14 12 L14 36 M14 12 L28 12 Q36 12 36 20 Q36 28 28 28 L14 28" stroke="#D4A017" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="36" cy="34" r="2.5" fill="#D4A017"/>
+            </svg>
+            <div class="brand-text">
+                <div class="brand-name">Paydirt</div>
+                <div class="brand-tagline">Log scrubber for Splunk exports</div>
+            </div>
+        </div>
+        <div class="header-meta">
+            <span class="version-pill" id="version-pill">v-.-.-</span>
+            <span class="offline-pill" title="All processing happens in your browser. Your data never leaves this page.">
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M5 8.5 L7 10.5 L11 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Runs locally
+            </span>
+        </div>
+    </div>
+</header>
+
+<main class="page">
+
+    <!-- Input section: drop zone, file picker, paste area -->
+    <section class="input-section" aria-labelledby="input-heading">
+        <h2 id="input-heading" class="section-heading">Input</h2>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files here or click to choose">
+            <div class="drop-zone-content">
+                <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true">
+                    <path d="M24 6 L24 30 M14 20 L24 30 L34 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="8" y="36" width="32" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <div class="drop-zone-text">
+                    <div class="drop-zone-primary">Drop files to scrub</div>
+                    <div class="drop-zone-secondary">
+                        or <button type="button" class="link-button" id="file-picker-trigger">choose files</button> from your computer
+                    </div>
+                    <div class="drop-zone-hint">CSV, JSON, TXT - multiple files OK</div>
+                </div>
+            </div>
+            <input type="file" id="file-input" class="visually-hidden" multiple accept=".csv,.json,.jsonl,.txt,.log">
+        </div>
+
+        <details class="paste-details">
+            <summary>Or paste log text</summary>
+            <div class="paste-body">
+                <textarea id="paste-input" rows="6" placeholder="Paste log events or a Splunk export here..." spellcheck="false"></textarea>
+                <div class="paste-actions">
+                    <button type="button" class="secondary-button" id="paste-scrub-btn">Scrub pasted text</button>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- Config section: shows loaded config status, allows upload -->
+    <section class="config-section" aria-labelledby="config-heading">
+        <h2 id="config-heading" class="section-heading">Configuration</h2>
+        <div class="config-status" id="config-status">
+            <div class="config-line">
+                <span class="config-label">Active config:</span>
+                <span class="config-value" id="config-source">Built-in defaults</span>
+            </div>
+            <div class="config-line">
+                <span class="config-label">Rules loaded:</span>
+                <span class="config-value" id="config-counts">- text, - @json</span>
+            </div>
+            <div class="config-actions">
+                <label class="secondary-button" for="config-file-input">
+                    Load custom config
+                </label>
+                <input type="file" id="config-file-input" class="visually-hidden" accept=".csv,.txt">
+                <button type="button" class="secondary-button" id="config-template-btn" title="Download a starter config CSV you can edit in a text editor, then load back into Paydirt">Download template</button>
+                <button type="button" class="secondary-button" id="config-export-btn" hidden title="Download the custom config currently loaded">Export current config</button>
+                <button type="button" class="secondary-button" id="config-reset-btn" hidden>Reset to defaults</button>
+                <label class="remember-config">
+                    <input type="checkbox" id="remember-config">
+                    Remember this config on this browser
+                </label>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results section: one card per file scrubbed -->
+    <section class="results-section" aria-labelledby="results-heading">
+        <div class="results-header">
+            <h2 id="results-heading" class="section-heading">Results</h2>
+            <button type="button" class="link-button" id="clear-results-btn" hidden>Clear all</button>
+        </div>
+        <div id="results-container" class="results-container">
+            <div class="results-empty" id="results-empty">
+                <p>Drop a file above to get started. Scrubbed output appears here.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-row">
+            <span>Paydirt runs entirely in your browser. Files never leave your device.</span>
+            <span class="footer-sep">&middot;</span>
+            <a href="https://machinedatainsights.com" target="_blank" rel="noopener noreferrer">Machine Data Insights</a>
+            <span class="footer-tagline">There's Gold In That Data!&trade;</span>
+        </div>
+        <div class="footer-row footer-license">
+            <span>&copy; 2026 Machine Data Insights Inc.</span>
+            <span class="footer-sep">&middot;</span>
+            <span>Licensed under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache License 2.0</a></span>
+        </div>
+    </div>
+</footer>
+
+<!-- Hidden template: the per-file result card. Cloned for each scrubbed file. -->
+<template id="result-card-template">
+    <article class="result-card">
+        <header class="result-card-header">
+            <div class="result-card-title">
+                <svg class="file-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M3 1.5 L3 14.5 Q3 15 3.5 15 L12.5 15 Q13 15 13 14.5 L13 5 L9 1.5 Z M9 1.5 L9 5 L13 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+                <span class="result-filename"></span>
+                <span class="result-size"></span>
+            </div>
+            <div class="result-card-actions">
+                <button type="button" class="download-button" data-action="download">
+                    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <path d="M8 1 L8 11 M4 7 L8 11 L12 7 M2 14 L14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Download
+                </button>
+                <button type="button" class="icon-button" data-action="remove" aria-label="Remove this result">
+                    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="result-tabs" role="tablist">
+            <button type="button" class="result-tab" role="tab" data-tab="scrubbed" aria-selected="true">Scrubbed</button>
+            <button type="button" class="result-tab" role="tab" data-tab="comparison" aria-selected="false">Comparison</button>
+            <button type="button" class="result-tab" role="tab" data-tab="summary" aria-selected="false">Summary</button>
+        </div>
+
+        <div class="result-tab-panels">
+            <div class="result-tab-panel" data-panel="scrubbed" role="tabpanel">
+                <pre class="result-pre scrubbed-pre"></pre>
+                <div class="truncation-notice" hidden></div>
+            </div>
+            <div class="result-tab-panel" data-panel="comparison" role="tabpanel" hidden>
+                <div class="comparison-wrapper">
+                    <div class="comparison-column">
+                        <div class="comparison-header">Original</div>
+                        <div class="comparison-pane original-pane" tabindex="0"></div>
+                    </div>
+                    <div class="comparison-column">
+                        <div class="comparison-header">Scrubbed</div>
+                        <div class="comparison-pane scrubbed-pane" tabindex="0"></div>
+                    </div>
+                </div>
+                <div class="comparison-legend">
+                    <span class="legend-item"><span class="legend-swatch swatch-token"></span>Built-in redactions</span>
+                    <span class="legend-item"><span class="legend-swatch swatch-cui"></span>CUI redactions</span>
+                    <span class="legend-item"><span class="legend-swatch swatch-custom"></span>Custom rule redactions</span>
+                </div>
+                <div class="truncation-notice" hidden></div>
+            </div>
+            <div class="result-tab-panel" data-panel="summary" role="tabpanel" hidden>
+                <div class="summary-content"></div>
+            </div>
+        </div>
+    </article>
+</template>
+
+<!-- Processing overlay: shown during scrubbing of large files -->
+<div class="processing-overlay" id="processing-overlay" hidden>
+    <div class="processing-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="processing-text" id="processing-text">Scrubbing...</div>
+    </div>
+</div>
+
+<script>
+window.__PAYDIRT_DEFAULT_CONFIG__ = `# Log Scrubbing Configuration
+# For use with log_scrubber.py and Paydirt.html
+# by Machine Data Insights Inc.
+#
+# This file is loaded automatically when placed alongside log_scrubber.py,
+# or specified with --config. In Paydirt, load it via "Load custom config".
+# Comments (lines starting with #) and blank lines are ignored.
+#
+# ============================================================================
+# Text substitution rules
+# Format: search_term,replacement_mode,replacement_values
+# replacement_modes:
+#   single  - always use the given replacement
+#   random  - pick one from a comma-separated list of choices
+#
+# Values containing commas MUST be quoted with double quotes.
+# Values with only colons or slashes (e.g. ARNs, URLs) do NOT need quoting.
+# ============================================================================
+
+# Company names - customize for your organization
+ACME Corp,single,CompanyA
+ACME,single,COMP
+
+# Network ranges - add your internal ranges
+192.168,single,10.0
+172.16,single,10.1
+
+# Email domains
+@acme.com,single,@company.com
+john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.com"
+
+# ============================================================================
+# JSON field rules - @json prefix
+# Supports three config formats:
+#
+#   3-column (implicit single mode - simplest):
+#     @json,fieldName,REPLACEMENT
+#
+#   4-column explicit single mode:
+#     @json,fieldName,single,REPLACEMENT
+#
+#   4-column random mode (picks one from the list each time):
+#     @json,fieldName,random,"value1,value2,value3"
+#
+# As of v1.1.0, field names may use dot notation to target nested paths:
+#   @json,userIdentity.arn,...     - matches arn only when nested under userIdentity
+#   @json,accountId,...            - unqualified; matches at any depth (v1.0 behavior)
+# ============================================================================
+
+# AWS - common sensitive fields across CloudTrail, GuardDuty, VPC Flow, etc.
+@json,sourceIPAddress,10.0.0.x
+@json,userIdentity.arn,arn:aws:iam::000000000000:user/REDACTED
+@json,userIdentity.principalId,REDACTED_PRINCIPAL
+@json,requestParameters.bucketName,example-bucket
+@json,responseElements.instancesSet.instanceId,i-0123456789abcdef0
+@json,accountId,000000000000
+@json,account_id,000000000000
+@json,dest,i-0123456789abcdef0
+@json,BuildUser,contractor
+@json,resource.accessKeyDetails.accessKeyId,AKIAIOSFODNN7REDACTED
+@json,resource.accessKeyDetails.principalId,AROAIOSFODNN7REDACTED:session-name
+@json,resource.accessKeyDetails.userName,aws-user-redacted
+@json,resource.eksClusterDetails.arn,arn:aws:eks:us-gov-west-1:000000000000:cluster/REDACTED_CLUSTER
+@json,resource.instanceDetails.instanceId,i-0123456789abcdef0
+
+# Azure - common fields
+@json,tenantId,00000000-0000-0000-0000-000000000000
+@json,callerIpAddress,10.0.0.x
+@json,upn,user@example.com
+
+# Okta
+@json,client.ipAddress,10.0.0.x
+@json,actor.alternateId,user@example.com
+
+# Tag key-value pairs (AWS/Azure/GCP - matches {"key":"X","value":"Y"})
+@json,Owner,random,"user_a@example.com,user_b@example.com"
+@json,CreatedBy,random,"user_a@example.com,user_b@example.com"
+@json,Name,REDACTED_NAME
+@json,Environment,random,"dev,staging,production"
+
+# ============================================================================
+# v1.1.0 examples - uncomment and customize as needed
+#
+# The built-in scrubbing layers (CUI markings, credentials/tokens, SSN,
+# Luhn-validated credit cards, NPI, phone, Windows SIDs) run automatically
+# - you do NOT need config rules for those. Add rules here only for
+# environment-specific identifiers the built-ins don't know about.
+#
+# Nested path examples:
+#   @json,eventData.actor.email,user@example.com
+#   @json,http.request.headers.Authorization,REDACTED_AUTH
+#
+# Custom identifier patterns (e.g. your internal employee ID format):
+#   EMP-,single,EMP-REDACTED
+#
+# Kerberos realm (often shows up in Windows event logs):
+#   @CORP.LOCAL,single,@EXAMPLE.LOCAL
+# ============================================================================
+
+# ============================================================================
+# CUSTOM CONFIGURATIONS
+# Add your organization-specific rules below. Some examples to get started:
+#
+#   MYCOMPANY-HOST01,single,HOST-REDACTED
+#   @mycompany.internal,single,@example.com
+#   @json,myCustomFieldName,REDACTED_VALUE
+# ============================================================================
+
+`;
+</script>
+<script>
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Machine Data Insights Inc.
+// https://machinedatainsights.com
+//
+// ============================================================================
+// Paydirt - Log Scrubber (JavaScript Port)
+//
+// Scrubs CUI, PII, PHI, credentials, and other sensitive data from Splunk
+// field-value exports and log samples. Ports the exact behavior of the Python
+// log_scrubber.py so both tools produce identical output for identical input.
+//
+// Pipeline, in order:
+//   1. @json field-name shortcut (for fieldsummary data)
+//   2. CUI marking detection (full-value redaction when triggered)
+//   3. Credential & token patterns (AWS keys, JWTs, PEM blocks, etc.)
+//   4. Original built-in patterns (IP, email, FQDN, UNC, DOMAIN\user, MAC)
+//   5. Additional PII (SSN, Luhn-valid CCs, phone, Windows SIDs, NPIs)
+//   6. Custom text substitution rules from config
+//   7. JSON field-level scrubbing (parsed walk + regex fallback)
+//
+// Human-readable by design. Function names, comments, and structure mirror
+// log_scrubber.py so a reader can cross-reference the two.
+// ============================================================================
+
+const PAYDIRT_VERSION = '1.2.0';
+
+// ============================================================================
+// CUI Marking Detection (CMMC / NIST SP 800-171)
+// ============================================================================
+//
+// CUI is identified by banner/portion/legacy markings, not by content patterns.
+// When a marking is present, the entire value is redacted with a metadata-only
+// placeholder that preserves category and byte count for downstream LLM use.
+
+const CUI_BANNER_RE = /\b(CUI|CONTROLLED)(?:\/\/(?:SP-[A-Z]+|BASIC|NOFORN|FEDCON|FED ONLY|DL ONLY|REL TO [A-Z, ]+))*\b/;
+
+const CUI_PORTION_RE = /\((CUI|U\/\/FOUO|U\/\/SBU|U\/\/LES|C|U|FOUO|SBU|LES)(?:\/\/[A-Z-]+)?\)/;
+
+const CUI_LEGACY_RE = /\b(FOUO|SBU|LES|OUO|LIMDIS|NOFORN|FEDCON|ORCON)\b/;
+
+const CUI_ADJACENT_RE = /\b(ITAR|EAR99|ECCN\s*[0-9A-Z]+|DD\s*254|FCI)\b/;
+
+
+function detectCui(text) {
+    // Scan text for CUI markings. Returns the CUI category string if found,
+    // else null. Detection order: banner > portion > legacy > adjacent.
+    if (!text) return null;
+
+    let m = text.match(CUI_BANNER_RE);
+    if (m) return m[0];
+
+    m = text.match(CUI_PORTION_RE);
+    if (m) return m[0].replace(/[()]/g, '');
+
+    m = text.match(CUI_LEGACY_RE);
+    if (m) return 'LEGACY:' + m[0];
+
+    m = text.match(CUI_ADJACENT_RE);
+    if (m) return 'ADJACENT:' + m[0];
+
+    return null;
+}
+
+
+function redactCui(text, category) {
+    // Replace CUI-tainted content with a metadata-only placeholder.
+    // Preserve leading/trailing whitespace so line boundaries survive when
+    // an entire log line is redacted in samples mode.
+    const leadingMatch = text.match(/^\s*/);
+    const trailingMatch = text.match(/\s*$/);
+    const leadingWs = leadingMatch ? leadingMatch[0] : '';
+    const trailingWs = trailingMatch ? trailingMatch[0] : '';
+    const core = text.trim();
+    return leadingWs + '[CUI-REDACTED: ' + category + ', ' + core.length + ' bytes]' + trailingWs;
+}
+
+
+// ============================================================================
+// Credential & Token Patterns
+// ============================================================================
+//
+// Run BEFORE the generic IP/email/FQDN patterns so tokens containing IP-shaped
+// or email-shaped substrings aren't corrupted. Each pattern has a known prefix
+// or structural anchor to minimize false positives.
+
+const CREDENTIAL_PATTERNS = [
+    // PEM private key blocks - match the whole block including newlines.
+    [/-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----/g,
+     '[REDACTED_PRIVATE_KEY]'],
+
+    // AWS access key IDs (AKIA = long-term, ASIA = STS)
+    [/\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, 'AKIAREDACTEDREDACTED'],
+
+    // GitHub personal access tokens (classic ghp_, OAuth gho_, etc.)
+    [/\bgh[pousr]_[A-Za-z0-9]{36,}\b/g, 'ghp_REDACTED'],
+
+    // Slack tokens (bot, user, workspace, app, refresh, legacy)
+    [/\bxox[baprs]-[0-9a-zA-Z-]{10,}\b/g, 'xoxb-REDACTED'],
+
+    // Stripe secret keys (live and test)
+    [/\bsk_(?:live|test)_[0-9a-zA-Z]{24,}\b/g, 'sk_test_REDACTED'],
+
+    // JWTs - three base64url segments, eyJ is the stable anchor
+    [/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,
+     'eyJREDACTED.REDACTED.REDACTED'],
+
+    // Google API keys (AIza prefix, 35 char alphanumeric)
+    [/\bAIza[0-9A-Za-z\-_]{35}\b/g, 'AIzaREDACTED'],
+
+    // HTTP Authorization header values - redact credential, keep scheme
+    [/(Authorization\s*:\s*(?:Bearer|Basic|Digest|Token))\s+\S+/gi,
+     '$1 REDACTED'],
+
+    // URL query-string credentials
+    [/([?&](?:password|passwd|pwd|token|api_key|apikey|access_token|refresh_token|auth|authorization|secret|session|sessionid|sid)=)[^&\s"']+/gi,
+     '$1REDACTED'],
+];
+
+
+// ============================================================================
+// Additional PII Patterns
+// ============================================================================
+
+// SSN requires formatting (XXX-XX-XXXX). Also excludes invalid SSN ranges
+// per SSA rules (000/666/9xx area, 00 group, 0000 serial).
+const SSN_RE = /\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g;
+
+// Candidate CC matcher. Results are Luhn-validated before redaction.
+const CC_CANDIDATE_RE = /\b\d(?:[ -]?\d){12,18}\b/g;
+
+// Phone numbers. Require at least one separator/paren to reduce FP.
+const PHONE_RE = /(?<!\d)(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]\d{3}[-. ]\d{4}(?!\d)/g;
+
+// Windows SIDs - S-1-5-21- prefix is distinctive for domain/local user SIDs.
+// Well-known SIDs (S-1-5-18 SYSTEM, etc.) do not match this pattern.
+const SID_RE = /\bS-1-5-21-\d+-\d+-\d+-\d+\b/g;
+
+// NPI candidates - 10-digit sequences. Validated via Luhn variant before redaction.
+const NPI_CANDIDATE_RE = /\b\d{10}\b/g;
+
+
+function luhnValid(numStr) {
+    // Validate a digit string using the Luhn algorithm (ISO/IEC 7812-1).
+    const digits = numStr.split('').filter(c => /\d/.test(c)).map(Number);
+    if (digits.length < 13 || digits.length > 19) return false;
+
+    let checksum = 0;
+    for (let i = 0; i < digits.length; i++) {
+        // i counts from the right (reversed iteration)
+        const revIdx = digits.length - 1 - i;
+        let d = digits[revIdx];
+        if (i % 2 === 1) {
+            d *= 2;
+            if (d > 9) d -= 9;
+        }
+        checksum += d;
+    }
+    return checksum % 10 === 0;
+}
+
+
+function npiValid(numStr) {
+    // Validate a 10-digit NPI using the Luhn variant from 45 CFR 162.406.
+    // The NPI prefix '80840' is prepended before running Luhn.
+    if (numStr.length !== 10 || !/^\d{10}$/.test(numStr)) return false;
+    return luhnValid('80840' + numStr);
+}
+
+
+function redactCcs(text) {
+    // Find candidate credit-card numbers and redact only the Luhn-valid ones.
+    return text.replace(CC_CANDIDATE_RE, (match) => {
+        const digits = match.replace(/\D/g, '');
+        return luhnValid(digits) ? '4111-1111-1111-1111' : match;
+    });
+}
+
+
+function redactNpis(text) {
+    // Find candidate 10-digit numbers and redact only valid NPIs.
+    return text.replace(NPI_CANDIDATE_RE, (match) => {
+        return npiValid(match) ? '1234567893' : match;
+    });
+}
+
+
+// ============================================================================
+// Config Parsing
+// ============================================================================
+//
+// Parses log_scrubbing_config.csv. Returns { textRules, jsonFieldRules }.
+// Rule formats:
+//   search_term,single,replacement              (text, explicit single mode)
+//   search_term,random,"val1,val2,val3"         (text, random mode)
+//   search_term,replacement                      (text, implicit single mode)
+//   @json,field_name,replacement                 (json, implicit single)
+//   @json,field_name,single,replacement          (json, explicit single)
+//   @json,field_name,random,"val1,val2,val3"     (json, random mode)
+
+function parseScrubbingConfig(csvText) {
+    const textRules = [];
+    const jsonFieldRules = [];
+
+    if (!csvText) return { textRules, jsonFieldRules };
+
+    const rows = parseCsv(csvText);
+
+    for (const row of rows) {
+        if (!row || row.length === 0) continue;
+        const first = (row[0] || '').trim();
+        if (!first || first.startsWith('#')) continue;
+        if (row.length < 3) continue;
+
+        if (first.toLowerCase() === '@json') {
+            const fieldName = (row[1] || '').trim();
+            if (!fieldName) continue;
+            const thirdVal = (row[2] || '').trim().toLowerCase();
+            if (row.length >= 4 && (thirdVal === 'single' || thirdVal === 'random')) {
+                const mode = thirdVal;
+                const replacementValues = (row[3] || '').trim();
+                jsonFieldRules.push([fieldName, mode, replacementValues]);
+            } else {
+                const replacement = (row[2] || '').trim();
+                jsonFieldRules.push([fieldName, 'single', replacement]);
+            }
+        } else {
+            // Text rule: 2-col (search,replacement) or 3-col (search,mode,replacement)
+            if (row.length === 2) {
+                textRules.push([first, 'single', (row[1] || '').trim()]);
+            } else {
+                const mode = (row[1] || '').trim().toLowerCase();
+                if (mode !== 'single' && mode !== 'random') {
+                    // Treat as 2-col: search_term,replacement
+                    textRules.push([first, 'single', (row[1] || '').trim()]);
+                } else {
+                    textRules.push([first, mode, (row[2] || '').trim()]);
+                }
+            }
+        }
+    }
+
+    return { textRules, jsonFieldRules };
+}
+
+
+function parseCsv(text) {
+    // Minimal RFC 4180-ish CSV parser. Handles quoted fields with embedded
+    // commas and escaped quotes. Good enough for config files; not a general-
+    // purpose CSV parser (the scrubber uses the browser File API + user-provided
+    // input for samples, so this parser is only applied to configs).
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < text.length) {
+        const c = text[i];
+        if (inQuotes) {
+            if (c === '"') {
+                if (text[i + 1] === '"') {
+                    field += '"';
+                    i += 2;
+                    continue;
+                }
+                inQuotes = false;
+                i++;
+                continue;
+            }
+            field += c;
+            i++;
+        } else {
+            if (c === '"') {
+                inQuotes = true;
+                i++;
+            } else if (c === ',') {
+                row.push(field);
+                field = '';
+                i++;
+            } else if (c === '\n' || c === '\r') {
+                row.push(field);
+                rows.push(row);
+                row = [];
+                field = '';
+                // Swallow \r\n pair as one line ending
+                if (c === '\r' && text[i + 1] === '\n') i += 2;
+                else i++;
+            } else {
+                field += c;
+                i++;
+            }
+        }
+    }
+    // Handle trailing field/row (file without final newline)
+    if (field.length > 0 || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+    }
+    return rows;
+}
+
+
+// ============================================================================
+// Replacement Resolver
+// ============================================================================
+
+// A deterministic PRNG would be nice for reproducible scrubbing. For now,
+// random-mode rules use Math.random() just like the Python version uses
+// random.choice() without seeding.
+function resolveReplacement(mode, replacementValues) {
+    if (mode === 'random') {
+        const choices = replacementValues.split(',').map(v => v.trim()).filter(Boolean);
+        return choices.length ? choices[Math.floor(Math.random() * choices.length)]
+                              : replacementValues;
+    }
+    return replacementValues;
+}
+
+
+// ============================================================================
+// JSON Path Matching (v1.1.0+)
+// ============================================================================
+//
+// Unqualified rules (no dots): match any field with that exact name at any
+// depth. This is the v1.0 behavior, preserved for backward compatibility.
+//
+// Qualified rules (contain dots): match as a path suffix anchored at a dotted
+// boundary. So 'userIdentity.arn' matches 'userIdentity.arn' and
+// 'detail.userIdentity.arn' but not 'foo.userIdentity.arn.extra'.
+
+function ruleMatchesPath(ruleField, currentPath, currentKey) {
+    if (ruleField.indexOf('.') !== -1) {
+        return currentPath === ruleField || currentPath.endsWith('.' + ruleField);
+    }
+    return currentKey === ruleField;
+}
+
+
+function scrubJsonObj(obj, fieldRules, currentPath) {
+    // Recursively walk a parsed JSON object and replace values for matching
+    // field names. Handles two patterns:
+    //   1. Direct field match:   {"accountId": "123"}
+    //   2. Key-value tag match:  {"key": "Owner", "value": "admin@corp.com"}
+    currentPath = currentPath || '';
+
+    if (obj === null || obj === undefined) return obj;
+
+    if (Array.isArray(obj)) {
+        return obj.map(item => scrubJsonObj(item, fieldRules, currentPath));
+    }
+
+    if (typeof obj === 'object') {
+        // Pattern 2: key-value pair detection.
+        // Build a case-insensitive map so we catch 'key'/'Key'/'name'/'Name' uniformly.
+        const keysLowerMap = {};
+        for (const k of Object.keys(obj)) {
+            keysLowerMap[k.toLowerCase()] = k;
+        }
+
+        let kvKeyField = null;
+        let kvValField = null;
+        for (const candidate of ['key', 'name']) {
+            if (keysLowerMap[candidate]) {
+                kvKeyField = keysLowerMap[candidate];
+                break;
+            }
+        }
+        if (keysLowerMap['value']) {
+            kvValField = keysLowerMap['value'];
+        }
+
+        if (kvKeyField !== null && kvValField !== null
+                && typeof obj[kvKeyField] === 'string') {
+            const tagName = obj[kvKeyField];
+            for (const rule of fieldRules) {
+                const fn = rule[0];
+                // Tag matching only applies to unqualified rules.
+                if (fn.indexOf('.') !== -1) continue;
+                if (tagName === fn) {
+                    const mode = rule.length > 2 ? rule[1] : 'single';
+                    const replVals = rule.length > 2 ? rule[2] : rule[1];
+                    obj[kvValField] = resolveReplacement(mode, replVals);
+                    for (const k of Object.keys(obj)) {
+                        if (k !== kvValField) {
+                            const newPath = currentPath ? currentPath + '.' + k : k;
+                            obj[k] = scrubJsonObj(obj[k], fieldRules, newPath);
+                        }
+                    }
+                    return obj;
+                }
+            }
+        }
+
+        // Pattern 1: direct field match (supports unqualified and dotted-path)
+        for (const key of Object.keys(obj)) {
+            const newPath = currentPath ? currentPath + '.' + key : key;
+            let matched = false;
+            for (const rule of fieldRules) {
+                const fn = rule[0];
+                if (ruleMatchesPath(fn, newPath, key)) {
+                    const mode = rule.length > 2 ? rule[1] : 'single';
+                    const replVals = rule.length > 2 ? rule[2] : rule[1];
+                    obj[key] = resolveReplacement(mode, replVals);
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                obj[key] = scrubJsonObj(obj[key], fieldRules, newPath);
+            }
+        }
+        return obj;
+    }
+
+    return obj;
+}
+
+
+function applyJsonFieldScrubbing(text, fieldRules) {
+    // Apply JSON field scrubbing to a text string.
+    // Handles: entire-JSON, JSON-after-prefix, key-value regex fallback,
+    // direct-field regex fallback.
+    if (!fieldRules || fieldRules.length === 0 || !text) return text;
+
+    const stripped = text.trim();
+
+    function tryJsonParseAndScrub(jsonStr) {
+        try {
+            const obj = JSON.parse(jsonStr);
+            scrubJsonObj(obj, fieldRules, '');
+            const compact = jsonStr.indexOf('\n') === -1;
+            return compact ? JSON.stringify(obj) : JSON.stringify(obj, null, 2);
+        } catch (e) {
+            // Not valid JSON or partial JSON - caller falls through to regex
+            return null;
+        }
+    }
+
+    // Case 1: entire string is JSON
+    if (stripped.startsWith('{') || stripped.startsWith('[')) {
+        const result = tryJsonParseAndScrub(stripped);
+        if (result !== null) return result;
+    }
+
+    // Case 2: JSON embedded after prefix
+    const braceIdx = text.indexOf('{');
+    if (braceIdx > 0) {
+        const prefix = text.substring(0, braceIdx);
+        const jsonPart = text.substring(braceIdx);
+        const result = tryJsonParseAndScrub(jsonPart);
+        if (result !== null) return prefix + result;
+    }
+
+    // Build rule lookup map for regex fallback
+    const ruleMap = {};
+    for (const rule of fieldRules) {
+        const fn = rule[0];
+        const mode = rule.length > 2 ? rule[1] : 'single';
+        const replVals = rule.length > 2 ? rule[2] : rule[1];
+        ruleMap[fn] = [mode, replVals];
+    }
+
+    // Case 3: key-value pair regex fallback (double-quoted)
+    text = text.replace(
+        /"(?:key|Key|name|Name)"\s*:\s*"([^"]*)"\s*,\s*"(?:value|Value)"\s*:\s*"([^"]*)"/g,
+        (match, tagName, tagValue) => {
+            if (ruleMap[tagName]) {
+                const [mode, replVals] = ruleMap[tagName];
+                const replacement = resolveReplacement(mode, replVals);
+                return match.replace(tagValue, replacement);
+            }
+            return match;
+        }
+    );
+
+    // Case 3b: key-value pair regex fallback (single-quoted)
+    text = text.replace(
+        /'(?:key|Key|name|Name)'\s*:\s*'([^']*)'\s*,\s*'(?:value|Value)'\s*:\s*'([^']*)'/g,
+        (match, tagName, tagValue) => {
+            if (ruleMap[tagName]) {
+                const [mode, replVals] = ruleMap[tagName];
+                const replacement = resolveReplacement(mode, replVals);
+                return match.replace(tagValue, replacement);
+            }
+            return match;
+        }
+    );
+
+    // Case 4: direct field regex fallback
+    for (const fn of Object.keys(ruleMap)) {
+        const [mode, replVals] = ruleMap[fn];
+        const replacement = resolveReplacement(mode, replVals);
+        const escaped = fn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        // Double-quoted: "fieldname": "value"
+        const dqPattern = new RegExp('("' + escaped + '")\\s*:\\s*"[^"]*"', 'g');
+        text = text.replace(dqPattern, '$1: "' + replacement.replace(/\\/g, '\\\\') + '"');
+
+        // Single-quoted: 'fieldname': 'value'
+        const sqPattern = new RegExp("('" + escaped + "')\\s*:\\s*'[^']*'", 'g');
+        text = text.replace(sqPattern, "$1: '" + replacement.replace(/\\/g, '\\\\') + "'");
+    }
+
+    return text;
+}
+
+
+// ============================================================================
+// Fieldsummary-aware Value Replacement
+// ============================================================================
+
+function scrubFieldsummaryValues(rawValues, replacement) {
+    // Replace the 'value' entries in Splunk fieldsummary format while preserving
+    // structure and counts.
+    let result = rawValues;
+    result = result.replace(/('value':\s*')([^']*?)(')/g,
+        (m, p1, p2, p3) => p1 + replacement + p3);
+    result = result.replace(/("value":\s*")([^"]*?)(")/g,
+        (m, p1, p2, p3) => p1 + replacement + p3);
+    return result;
+}
+
+
+// ============================================================================
+// Well-known Public Hosts (FQDN exclusion list)
+// ============================================================================
+//
+// These are industry-standard public schema/namespace/documentation URLs
+// that routinely appear in XML, JSON, and log data without being PII. The
+// FQDN regex excludes these via negative lookahead so they're left intact.
+// Keep this list conservative - only hosts that are categorically NOT PII
+// across any customer's data.
+
+const WELL_KNOWN_PUBLIC_HOSTS_PATTERN =
+    'schemas\\.microsoft\\.com' +
+    '|schemas\\.xmlsoap\\.org' +
+    '|schemas\\.openxmlformats\\.org' +
+    '|www\\.w3\\.org' +
+    '|www\\.iana\\.org' +
+    '|xmlns\\.com' +
+    '|tools\\.ietf\\.org' +
+    '|docs\\.oasis-open\\.org' +
+    '|purl\\.org' +
+    '|ns\\.adobe\\.com';
+
+// Built from the above at module load so we don't recompile it on every call.
+const FQDN_RE = new RegExp(
+    '\\b(?!(?:' + WELL_KNOWN_PUBLIC_HOSTS_PATTERN + ')\\b)' +
+    '[a-zA-Z0-9-]+\\.[a-zA-Z0-9-]+\\.(com|net|org|io|local|internal)\\b',
+    'g'
+);
+
+
+// ============================================================================
+// Core Scrubbing Function
+// ============================================================================
+
+function scrubText(text, textRules, jsonFieldRules, options) {
+    // Scrub a single text value using the full pipeline.
+    // options: { fieldName, enableBuiltins, enableCui } - all optional.
+    options = options || {};
+    const fieldName = options.fieldName || null;
+    const enableBuiltins = options.enableBuiltins !== false;  // default true
+    const enableCui = options.enableCui !== false;             // default true
+
+    if (!text || !text.trim()) return text;
+
+    let scrubbed = text;
+
+    // Step 1: @json field-name shortcut (fieldsummary data).
+    // Only unqualified rules can match a bare field name.
+    const jsonFieldMap = {};
+    for (const rule of jsonFieldRules) {
+        if (rule[0].indexOf('.') === -1) {
+            jsonFieldMap[rule[0]] = [rule[1], rule[2]];
+        }
+    }
+    if (fieldName && jsonFieldMap[fieldName]) {
+        const [mode, replVals] = jsonFieldMap[fieldName];
+        const replacement = resolveReplacement(mode, replVals);
+        return scrubFieldsummaryValues(scrubbed, replacement);
+    }
+
+    // Step 2: CUI marking detection.
+    if (enableCui) {
+        const category = detectCui(scrubbed);
+        if (category !== null) {
+            return redactCui(scrubbed, category);
+        }
+    }
+
+    if (enableBuiltins) {
+        // Step 3: credentials & tokens (before generic patterns)
+        for (const [pattern, replacement] of CREDENTIAL_PATTERNS) {
+            scrubbed = scrubbed.replace(pattern, replacement);
+        }
+
+        // Step 4: original built-in patterns (v1.0.0)
+        scrubbed = scrubbed.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '10.0.0.x');
+        scrubbed = scrubbed.replace(
+            /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+            'user@example.com'
+        );
+        scrubbed = scrubbed.replace(
+            /\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b/g,
+            'ip-10-0-0-x'
+        );
+        scrubbed = scrubbed.replace(FQDN_RE, 'host.example.com');
+        scrubbed = scrubbed.replace(
+            /\\\\[a-zA-Z0-9._-]+\\[a-zA-Z0-9._$-]+/g,
+            '\\\\SERVER\\SHARE'
+        );
+        scrubbed = scrubbed.replace(
+            /\b[A-Z][A-Z0-9_-]+\\[a-zA-Z0-9._-]+\b/g,
+            'DOMAIN\\user'
+        );
+        scrubbed = scrubbed.replace(
+            /\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g,
+            '00:00:00:00:00:00'
+        );
+
+        // Step 5: additional PII (v1.1.0)
+        scrubbed = scrubbed.replace(SSN_RE, '000-00-0000');
+        scrubbed = redactCcs(scrubbed);
+        scrubbed = scrubbed.replace(PHONE_RE, '555-555-5555');
+        scrubbed = scrubbed.replace(SID_RE, 'S-1-5-21-0-0-0-0');
+        scrubbed = redactNpis(scrubbed);
+    }
+
+    // Step 6: custom text substitution rules
+    for (const [searchTerm, mode, replacementValues] of textRules) {
+        if (scrubbed.indexOf(searchTerm) !== -1) {
+            let replacement;
+            if (mode === 'random') {
+                const choices = replacementValues.split(',').map(v => v.trim()).filter(Boolean);
+                replacement = choices.length ? choices[Math.floor(Math.random() * choices.length)]
+                                             : replacementValues;
+            } else {
+                replacement = replacementValues;
+            }
+            // Simple literal replacement, all occurrences
+            scrubbed = scrubbed.split(searchTerm).join(replacement);
+        }
+    }
+
+    // Step 7: JSON field scrubbing
+    if (jsonFieldRules.length > 0) {
+        scrubbed = applyJsonFieldScrubbing(scrubbed, jsonFieldRules);
+    }
+
+    return scrubbed;
+}
+
+
+// ============================================================================
+// Scrubber Class (convenience wrapper, parallels Python's Scrubber class)
+// ============================================================================
+
+class Scrubber {
+    constructor(options) {
+        options = options || {};
+        if (options.configText) {
+            const parsed = parseScrubbingConfig(options.configText);
+            this.textRules = parsed.textRules.concat(options.textRules || []);
+            this.jsonFieldRules = parsed.jsonFieldRules.concat(options.jsonFieldRules || []);
+        } else {
+            this.textRules = (options.textRules || []).slice();
+            this.jsonFieldRules = (options.jsonFieldRules || []).slice();
+        }
+        this.enableBuiltins = options.enableBuiltins !== false;
+        this.enableCui = options.enableCui !== false;
+    }
+
+    scrub(text, fieldName) {
+        return scrubText(text, this.textRules, this.jsonFieldRules, {
+            fieldName: fieldName || null,
+            enableBuiltins: this.enableBuiltins,
+            enableCui: this.enableCui,
+        });
+    }
+
+    scrubMany(texts, fieldName) {
+        return texts.map(t => this.scrub(t, fieldName));
+    }
+}
+
+
+// ============================================================================
+// Browser / Module Exports
+// ============================================================================
+
+// In a browser (via <script src=...> or build-time inline), everything attaches
+// to window.Paydirt. In a Node-style module context (tests), we export via
+// CommonJS. The conditional lets the same file work in both contexts without
+// preprocessing.
+
+const PAYDIRT_API = {
+    version: PAYDIRT_VERSION,
+    Scrubber,
+    scrubText,
+    parseScrubbingConfig,
+    detectCui,
+    redactCui,
+    luhnValid,
+    npiValid,
+    scrubJsonObj,
+    applyJsonFieldScrubbing,
+};
+
+if (typeof window !== 'undefined') {
+    window.Paydirt = PAYDIRT_API;
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PAYDIRT_API;
+}
+
+</script>
+<script>
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Machine Data Insights Inc.
+// https://machinedatainsights.com
+//
+// ============================================================================
+// Paydirt UI layer (app.js)
+//
+// Thin layer on top of scrubber.js. Handles:
+// - Drag/drop, file picker, paste input
+// - Config loading (bundled default, user upload, LocalStorage remember)
+// - Running files through the scrubber and building result cards
+// - Tabbed view: Scrubbed (plain), Comparison (side-by-side), Summary
+// - Line-level diff highlighting and synchronized scrolling
+// - Download of scrubbed output
+//
+// Everything runs in-browser. No network calls. No inline event handlers
+// (CSP-strict). All event binding happens here programmatically.
+// ============================================================================
+
+(function () {
+    'use strict';
+
+    // ----------------------------------------------------------------------
+    // Constants
+    // ----------------------------------------------------------------------
+
+    const COMPARISON_MAX_LINES = 1000;
+    const COMPARISON_MAX_BYTES = 500 * 1024;
+    const LARGE_FILE_SPINNER_THRESHOLD = 500 * 1024;  // show spinner over 500KB
+
+    const LOCAL_STORAGE_KEY = 'paydirt.customConfig.v1';
+    const REMEMBER_KEY = 'paydirt.rememberConfig.v1';
+
+    // Pipeline pattern categories for summary reporting. Each pattern in
+    // scrubber.js gets categorized here so we can count redactions per type.
+    // The implementation scans pre and post strings and counts what changed.
+    // We derive counts by re-running specific patterns against the original
+    // and the scrubbed text; this is a reporting mechanism, not a scrub.
+    const SUMMARY_CATEGORIES = [
+        { key: 'cui', label: 'CUI markings', matcher: 'cuiMarker' },
+        { key: 'ip', label: 'IP addresses', pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, ignoreReplacement: '10.0.0.x' },
+        { key: 'email', label: 'Email addresses', pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, ignoreReplacement: 'user@example.com' },
+        { key: 'fqdn', label: 'Hostnames / FQDNs', pattern: /\b[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.(com|net|org|io|local|internal)\b/g, ignoreReplacement: 'host.example.com' },
+        { key: 'aws_host', label: 'AWS ip- hostnames', pattern: /\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b/g, ignoreReplacement: 'ip-10-0-0-x' },
+        { key: 'domain_user', label: 'Domain usernames', pattern: /\b[A-Z][A-Z0-9_-]+\\[a-zA-Z0-9._-]+\b/g, ignoreReplacement: 'DOMAIN\\user' },
+        { key: 'unc_path', label: 'UNC paths', pattern: /\\\\[a-zA-Z0-9._-]+\\[a-zA-Z0-9._$-]+/g, ignoreReplacement: '\\\\SERVER\\SHARE' },
+        { key: 'mac', label: 'MAC addresses', pattern: /\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g, ignoreReplacement: '00:00:00:00:00:00' },
+        { key: 'ssn', label: 'SSN', pattern: /\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g, ignoreReplacement: '000-00-0000' },
+        { key: 'cc', label: 'Credit cards', matcher: 'luhnCc' },
+        { key: 'phone', label: 'Phone numbers', pattern: /(?<!\d)(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]\d{3}[-. ]\d{4}(?!\d)/g, ignoreReplacement: '555-555-5555' },
+        { key: 'sid', label: 'Windows SIDs', pattern: /\bS-1-5-21-\d+-\d+-\d+-\d+\b/g, ignoreReplacement: 'S-1-5-21-0-0-0-0' },
+        { key: 'aws_key', label: 'AWS access keys', pattern: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, ignoreReplacement: 'AKIAREDACTEDREDACTED' },
+        { key: 'jwt', label: 'JWTs', pattern: /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g },
+        { key: 'gh_pat', label: 'GitHub tokens', pattern: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
+        { key: 'slack', label: 'Slack tokens', pattern: /\bxox[baprs]-[0-9a-zA-Z-]{10,}\b/g },
+        { key: 'stripe', label: 'Stripe keys', pattern: /\bsk_(?:live|test)_[0-9a-zA-Z]{24,}\b/g },
+        { key: 'google_api', label: 'Google API keys', pattern: /\bAIza[0-9A-Za-z\-_]{35}\b/g },
+        { key: 'pem_key', label: 'PEM private keys', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----/g },
+        { key: 'auth_header', label: 'Authorization headers', pattern: /Authorization\s*:\s*(?:Bearer|Basic|Digest|Token)\s+\S+/gi },
+    ];
+
+    // ----------------------------------------------------------------------
+    // State
+    // ----------------------------------------------------------------------
+
+    let activeConfig = null;  // {source, text, textRules, jsonFieldRules}
+    let builtInConfig = null;
+    let resultCards = [];     // array of {id, filename, element}
+
+    // ----------------------------------------------------------------------
+    // Default config (bundled). Embedded as a template string at build time.
+    // For development we fetch from default-config.csv; the build script
+    // substitutes the string inline for the distributed single-file HTML.
+    // ----------------------------------------------------------------------
+
+    // The build system replaces this with the inlined config CSV content.
+    // During development, if this is the empty placeholder, the init code
+    // falls back to a minimal inlined default so the app is always usable.
+    const DEFAULT_CONFIG_CSV = window.__PAYDIRT_DEFAULT_CONFIG__ || getFallbackConfig();
+
+    function getFallbackConfig() {
+        // Minimal fallback so development works even without the build step.
+        // The real default lives in log_scrubbing_config.csv at the repo root.
+        return [
+            '# Paydirt default scrubbing config (minimal fallback)',
+            '# Built-in regex patterns handle IP, email, tokens, SSN, CC, CUI',
+            '# markings, etc. automatically. Rules below add AWS, Azure, Okta',
+            '# specifics that need explicit targeting.',
+            '',
+            '@json,sourceIPAddress,10.0.0.x',
+            '@json,accountId,000000000000',
+            '@json,userIdentity.arn,arn:aws:iam::000000000000:user/REDACTED',
+            '@json,userIdentity.principalId,REDACTED_PRINCIPAL',
+            '@json,tenantId,00000000-0000-0000-0000-000000000000',
+            '@json,callerIpAddress,10.0.0.x',
+            '@json,upn,user@example.com',
+            '@json,client.ipAddress,10.0.0.x',
+            '@json,actor.alternateId,user@example.com',
+            '@json,Owner,REDACTED_OWNER',
+            '@json,Environment,REDACTED_ENV',
+        ].join('\n');
+    }
+
+    // ----------------------------------------------------------------------
+    // DOM references
+    // ----------------------------------------------------------------------
+
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+        dropZone: $('drop-zone'),
+        fileInput: $('file-input'),
+        filePickerTrigger: $('file-picker-trigger'),
+        pasteInput: $('paste-input'),
+        pasteScrubBtn: $('paste-scrub-btn'),
+        configFileInput: $('config-file-input'),
+        configSource: $('config-source'),
+        configCounts: $('config-counts'),
+        configResetBtn: $('config-reset-btn'),
+        configTemplateBtn: $('config-template-btn'),
+        configExportBtn: $('config-export-btn'),
+        rememberConfig: $('remember-config'),
+        resultsContainer: $('results-container'),
+        resultsEmpty: $('results-empty'),
+        clearResultsBtn: $('clear-results-btn'),
+        resultCardTemplate: $('result-card-template'),
+        processingOverlay: $('processing-overlay'),
+        processingText: $('processing-text'),
+        versionPill: $('version-pill'),
+    };
+
+    // ----------------------------------------------------------------------
+    // Init
+    // ----------------------------------------------------------------------
+
+    function init() {
+        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.2.0');
+
+        // Parse built-in default config once
+        builtInConfig = buildConfigFromText(DEFAULT_CONFIG_CSV, 'Built-in defaults');
+
+        // If the user has opted in to "remember config," restore it
+        const remembered = loadRememberedConfig();
+        if (remembered) {
+            activeConfig = remembered;
+            dom.rememberConfig.checked = true;
+        } else {
+            activeConfig = builtInConfig;
+            dom.rememberConfig.checked = false;
+        }
+        updateConfigDisplay();
+
+        bindEventHandlers();
+    }
+
+    function buildConfigFromText(text, source) {
+        const parsed = window.Paydirt.parseScrubbingConfig(text);
+        return {
+            source,
+            text,
+            textRules: parsed.textRules,
+            jsonFieldRules: parsed.jsonFieldRules,
+        };
+    }
+
+    function updateConfigDisplay() {
+        dom.configSource.textContent = activeConfig.source;
+        dom.configCounts.textContent =
+            activeConfig.textRules.length + ' text, ' +
+            activeConfig.jsonFieldRules.length + ' @json';
+        const isCustom = (activeConfig !== builtInConfig);
+        dom.configResetBtn.hidden = !isCustom;
+        dom.configExportBtn.hidden = !isCustom;
+    }
+
+    // ----------------------------------------------------------------------
+    // Config: LocalStorage (remember)
+    // ----------------------------------------------------------------------
+
+    function loadRememberedConfig() {
+        try {
+            const remember = localStorage.getItem(REMEMBER_KEY);
+            if (remember !== 'true') return null;
+            const text = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (!text) return null;
+            return buildConfigFromText(text, 'Remembered custom config');
+        } catch (e) {
+            // LocalStorage may be disabled; fall back silently
+            return null;
+        }
+    }
+
+    function saveRememberedConfig(text) {
+        try {
+            localStorage.setItem(REMEMBER_KEY, 'true');
+            localStorage.setItem(LOCAL_STORAGE_KEY, text);
+        } catch (e) {
+            // Fail silently; checkbox stays checked but nothing is persisted
+        }
+    }
+
+    function clearRememberedConfig() {
+        try {
+            localStorage.removeItem(REMEMBER_KEY);
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+        } catch (e) {
+            // noop
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Event binding
+    // ----------------------------------------------------------------------
+
+    function bindEventHandlers() {
+        // Drop zone
+        dom.dropZone.addEventListener('click', (e) => {
+            // Clicks on the inner link-button shouldn't trigger the file input
+            if (e.target.closest('.link-button')) return;
+            dom.fileInput.click();
+        });
+        dom.dropZone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                dom.fileInput.click();
+            }
+        });
+        dom.dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dom.dropZone.classList.add('drag-active');
+        });
+        dom.dropZone.addEventListener('dragleave', (e) => {
+            // Only clear when leaving the drop zone, not moving between children
+            if (!dom.dropZone.contains(e.relatedTarget)) {
+                dom.dropZone.classList.remove('drag-active');
+            }
+        });
+        dom.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dom.dropZone.classList.remove('drag-active');
+            handleFiles(Array.from(e.dataTransfer.files));
+        });
+
+        dom.filePickerTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dom.fileInput.click();
+        });
+        dom.fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+            e.target.value = '';  // allow re-selecting the same file
+        });
+
+        // Paste area
+        dom.pasteScrubBtn.addEventListener('click', () => {
+            const text = dom.pasteInput.value;
+            if (!text.trim()) return;
+            processText(text, 'pasted-text-' + Date.now() + '.txt');
+            dom.pasteInput.value = '';
+        });
+
+        // Config
+        dom.configFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            loadCustomConfig(file);
+            e.target.value = '';
+        });
+        dom.configResetBtn.addEventListener('click', () => {
+            activeConfig = builtInConfig;
+            if (dom.rememberConfig.checked) {
+                clearRememberedConfig();
+                dom.rememberConfig.checked = false;
+            }
+            updateConfigDisplay();
+        });
+
+        dom.configTemplateBtn.addEventListener('click', () => {
+            // Download the bundled default config as a starter for the user
+            // to edit in their preferred text editor, then load back in.
+            downloadText(builtInConfig.text, 'log_scrubbing_config.csv');
+        });
+
+        dom.configExportBtn.addEventListener('click', () => {
+            // Export the currently-loaded custom config so the user can save
+            // it after editing via load-and-modify cycles.
+            downloadText(activeConfig.text, 'log_scrubbing_config.csv');
+        });
+        dom.rememberConfig.addEventListener('change', () => {
+            if (dom.rememberConfig.checked) {
+                if (activeConfig && activeConfig !== builtInConfig) {
+                    saveRememberedConfig(activeConfig.text);
+                }
+            } else {
+                clearRememberedConfig();
+            }
+        });
+
+        // Results
+        dom.clearResultsBtn.addEventListener('click', () => {
+            resultCards.forEach(card => card.element.remove());
+            resultCards = [];
+            updateResultsVisibility();
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // Config upload
+    // ----------------------------------------------------------------------
+
+    function loadCustomConfig(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            try {
+                activeConfig = buildConfigFromText(text, 'Custom: ' + file.name);
+                updateConfigDisplay();
+                if (dom.rememberConfig.checked) {
+                    saveRememberedConfig(text);
+                }
+            } catch (err) {
+                alert('Failed to parse config file: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ----------------------------------------------------------------------
+    // File handling
+    // ----------------------------------------------------------------------
+
+    function handleFiles(files) {
+        if (!files || files.length === 0) return;
+        // Process sequentially so the UI stays responsive and cards appear in order
+        let index = 0;
+        function next() {
+            if (index >= files.length) return;
+            const file = files[index++];
+            processFile(file, next);
+        }
+        next();
+    }
+
+    function processFile(file, onComplete) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            processText(e.target.result, file.name);
+            if (onComplete) setTimeout(onComplete, 0);
+        };
+        reader.onerror = () => {
+            buildErrorCard(file.name, 'Failed to read file');
+            if (onComplete) setTimeout(onComplete, 0);
+        };
+        reader.readAsText(file);
+    }
+
+    function processText(text, filename) {
+        const largeFile = text.length > LARGE_FILE_SPINNER_THRESHOLD;
+        if (largeFile) showProcessing('Scrubbing ' + filename + '...');
+
+        // Yield to the event loop so the spinner renders before heavy work
+        setTimeout(() => {
+            try {
+                const scrubbed = looksLikeCsv(text, filename)
+                    ? scrubCsvInput(text)
+                    : scrubMultiLineInput(text);
+                buildResultCard(filename, text, scrubbed);
+            } catch (err) {
+                buildErrorCard(filename, err.message || String(err));
+            } finally {
+                if (largeFile) hideProcessing();
+            }
+        }, largeFile ? 10 : 0);
+    }
+
+    // ----------------------------------------------------------------------
+    // Format detection
+    // ----------------------------------------------------------------------
+
+    function looksLikeCsv(text, filename) {
+        // Dispatch to CSV-aware scrubbing when the input is clearly tabular.
+        // Heuristics (any one suffices):
+        //   1. Filename ends in .csv
+        //   2. First line contains '_raw' as a column header
+        //   3. First line is a multi-column header (>= 3 comma-separated
+        //      identifiers, no embedded JSON braces)
+        if (filename && filename.toLowerCase().endsWith('.csv')) return true;
+
+        const firstNewline = text.indexOf('\n');
+        const firstLine = firstNewline === -1 ? text : text.substring(0, firstNewline);
+        if (!firstLine) return false;
+
+        // Splunk exports always have _raw when samples CSV
+        if (firstLine.indexOf('_raw') !== -1 && firstLine.indexOf(',') !== -1) {
+            return true;
+        }
+
+        // Look like a header row? Many comma-separated tokens that are plain
+        // identifiers/quoted-identifiers, no braces, no protocol schemes.
+        if (firstLine.indexOf('{') !== -1 || firstLine.indexOf('://') !== -1) {
+            return false;
+        }
+        const commaCount = (firstLine.match(/,/g) || []).length;
+        if (commaCount >= 2) {
+            // Check tokens look like identifiers (header-ish), not arbitrary text
+            const tokens = firstLine.split(',').map(t => t.trim().replace(/^"|"$/g, ''));
+            const identifierish = tokens.filter(t => /^[A-Za-z_][A-Za-z0-9_.:-]*$/.test(t)).length;
+            // If most tokens look like column names, it's a CSV header
+            if (identifierish / tokens.length >= 0.7) return true;
+        }
+
+        return false;
+    }
+
+    // ----------------------------------------------------------------------
+    // CSV-aware scrubbing
+    //
+    // Splunk CSV exports contain the same sensitive data redundantly across
+    // many columns (_raw plus hundreds of extracted fields). Scrubbing only
+    // _raw would leave the other columns exposed. This function parses the
+    // CSV, scrubs every cell through the scrubber (with the column name
+    // passed as fieldName so @json-field-name shortcuts still apply), and
+    // re-emits a valid CSV.
+    // ----------------------------------------------------------------------
+
+    function scrubCsvInput(text) {
+        const rows = parseCsv(text);
+        if (rows.length === 0) return text;
+
+        const header = rows[0];
+        const out = [formatCsvRow(header)];
+
+        for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            const scrubbedRow = [];
+            for (let c = 0; c < row.length; c++) {
+                const cellValue = row[c];
+                const columnName = c < header.length ? header[c] : null;
+                if (cellValue && cellValue.trim()) {
+                    scrubbedRow.push(window.Paydirt.scrubText(
+                        cellValue,
+                        activeConfig.textRules,
+                        activeConfig.jsonFieldRules,
+                        { fieldName: columnName }
+                    ));
+                } else {
+                    scrubbedRow.push(cellValue);
+                }
+            }
+            out.push(formatCsvRow(scrubbedRow));
+        }
+
+        return out.join('\r\n') + '\r\n';
+    }
+
+    // RFC 4180-ish CSV parser. Handles quoted fields with embedded commas,
+    // newlines, and escaped quotes ("" -> "). Tolerates both \n and \r\n
+    // line endings and unterminated final rows.
+    function parseCsv(text) {
+        const rows = [];
+        let row = [];
+        let field = '';
+        let inQuotes = false;
+        let i = 0;
+        while (i < text.length) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') {
+                        field += '"';
+                        i += 2;
+                        continue;
+                    }
+                    inQuotes = false;
+                    i++;
+                    continue;
+                }
+                field += c;
+                i++;
+            } else {
+                if (c === '"') {
+                    inQuotes = true;
+                    i++;
+                } else if (c === ',') {
+                    row.push(field);
+                    field = '';
+                    i++;
+                } else if (c === '\n' || c === '\r') {
+                    row.push(field);
+                    rows.push(row);
+                    row = [];
+                    field = '';
+                    if (c === '\r' && text[i + 1] === '\n') i += 2;
+                    else i++;
+                } else {
+                    field += c;
+                    i++;
+                }
+            }
+        }
+        if (field.length > 0 || row.length > 0) {
+            row.push(field);
+            rows.push(row);
+        }
+        return rows;
+    }
+
+    // Format a row back to CSV. Quotes any field that contains comma, quote,
+    // newline, or carriage-return, and doubles embedded quotes. Matches
+    // Python's csv module default dialect.
+    function formatCsvRow(row) {
+        return row.map(formatCsvField).join(',');
+    }
+
+    function formatCsvField(value) {
+        if (value === null || value === undefined) return '';
+        const s = String(value);
+        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 ||
+            s.indexOf('\n') !== -1 || s.indexOf('\r') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    }
+
+    // ----------------------------------------------------------------------
+    // Scrubbing: run the full input through scrubber.js event-by-event
+    // This mirrors the Python _scrub_samples_text_format logic so we behave
+    // the same way for multi-line JSON, JSONL, and plain-text log inputs.
+    // ----------------------------------------------------------------------
+
+    function scrubMultiLineInput(content) {
+        const lines = content.split(/(?<=\n)/);  // keep newline terminators
+        const events = [];
+        let jsonBuffer = [];
+        let braceDepth = 0;
+
+        for (const line of lines) {
+            const stripped = line.trim();
+            if (jsonBuffer.length > 0 || (stripped.startsWith('{') && braceDepth === 0)) {
+                jsonBuffer.push(line);
+                // Count braces outside strings. Simple approximation.
+                for (const ch of stripped) {
+                    if (ch === '{') braceDepth++;
+                    if (ch === '}') braceDepth--;
+                }
+                if (braceDepth <= 0) {
+                    events.push(jsonBuffer.join(''));
+                    jsonBuffer = [];
+                    braceDepth = 0;
+                }
+            } else if (stripped) {
+                events.push(line);
+            } else {
+                // Preserve blank lines in the output
+                events.push(line);
+            }
+        }
+        if (jsonBuffer.length > 0) events.push(jsonBuffer.join(''));
+
+        const scrubbed = events.map(ev => {
+            if (!ev.trim()) return ev;
+            return window.Paydirt.scrubText(ev, activeConfig.textRules, activeConfig.jsonFieldRules);
+        });
+        return scrubbed.join('');
+    }
+
+    // ----------------------------------------------------------------------
+    // Result card building
+    // ----------------------------------------------------------------------
+
+    function buildResultCard(filename, original, scrubbed) {
+        const card = dom.resultCardTemplate.content.firstElementChild.cloneNode(true);
+        const cardId = 'card-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        card.dataset.cardId = cardId;
+
+        // Populate header
+        card.querySelector('.result-filename').textContent = filename;
+        card.querySelector('.result-size').textContent = formatBytes(original.length) + ' -> ' + formatBytes(scrubbed.length);
+
+        // Populate Scrubbed tab
+        const scrubbedPre = card.querySelector('.scrubbed-pre');
+        scrubbedPre.textContent = scrubbed;
+
+        // Populate Comparison tab (with line-level diff and synced scroll)
+        populateComparison(card, original, scrubbed);
+
+        // Populate Summary tab
+        populateSummary(card, original, scrubbed);
+
+        // Wire up tab switching
+        wireUpTabs(card);
+
+        // Wire up download + remove
+        card.querySelector('[data-action="download"]').addEventListener('click', () => {
+            downloadText(scrubbed, buildScrubbedFilename(filename));
+        });
+        card.querySelector('[data-action="remove"]').addEventListener('click', () => {
+            card.remove();
+            resultCards = resultCards.filter(c => c.id !== cardId);
+            updateResultsVisibility();
+        });
+
+        // Insert at top of results (most recent first)
+        dom.resultsContainer.insertBefore(card, dom.resultsContainer.firstChild);
+        resultCards.push({id: cardId, filename, element: card});
+        updateResultsVisibility();
+    }
+
+    function buildErrorCard(filename, message) {
+        const card = dom.resultCardTemplate.content.firstElementChild.cloneNode(true);
+        card.classList.add('has-error');
+        card.querySelector('.result-filename').textContent = filename;
+        card.querySelector('.result-size').textContent = 'error';
+        // Replace tab panels with an error message
+        const panelsContainer = card.querySelector('.result-tab-panels');
+        panelsContainer.innerHTML = '';
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-content';
+        errDiv.textContent = 'Could not scrub this file: ' + message;
+        panelsContainer.appendChild(errDiv);
+        card.querySelector('.result-tabs').remove();
+        card.querySelector('[data-action="download"]').remove();
+        card.querySelector('[data-action="remove"]').addEventListener('click', () => {
+            card.remove();
+            updateResultsVisibility();
+        });
+        dom.resultsContainer.insertBefore(card, dom.resultsContainer.firstChild);
+        updateResultsVisibility();
+    }
+
+    function updateResultsVisibility() {
+        const hasAny = dom.resultsContainer.querySelector('.result-card') !== null;
+        dom.resultsEmpty.hidden = hasAny;
+        dom.clearResultsBtn.hidden = !hasAny;
+    }
+
+    function buildScrubbedFilename(filename) {
+        const ts = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '').replace(/^(\d{8})(\d{6})/, '$1_$2');
+        const dotIdx = filename.lastIndexOf('.');
+        if (dotIdx > 0) {
+            return filename.slice(0, dotIdx) + '_scrubbed_' + ts + filename.slice(dotIdx);
+        }
+        return filename + '_scrubbed_' + ts;
+    }
+
+    // ----------------------------------------------------------------------
+    // Tab wiring
+    // ----------------------------------------------------------------------
+
+    function wireUpTabs(card) {
+        const tabs = Array.from(card.querySelectorAll('.result-tab'));
+        const panels = Array.from(card.querySelectorAll('.result-tab-panel'));
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.tab;
+                tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.tab === target ? 'true' : 'false'));
+                panels.forEach(p => {
+                    p.hidden = (p.dataset.panel !== target);
+                });
+            });
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // Comparison view
+    // ----------------------------------------------------------------------
+
+    function populateComparison(card, original, scrubbed) {
+        const originalPane = card.querySelector('.original-pane');
+        const scrubbedPane = card.querySelector('.scrubbed-pane');
+        const notice = card.querySelector('[data-panel="comparison"] .truncation-notice');
+
+        // Split into lines, keeping them aligned
+        const origLines = original.split('\n');
+        const scrubLines = scrubbed.split('\n');
+        const lineCount = Math.max(origLines.length, scrubLines.length);
+
+        // Determine truncation
+        let truncated = false;
+        let maxLines = lineCount;
+        if (lineCount > COMPARISON_MAX_LINES) {
+            maxLines = COMPARISON_MAX_LINES;
+            truncated = true;
+        }
+        // Also cap by byte budget - use original as the reference
+        let byteBudget = COMPARISON_MAX_BYTES;
+        let byteCappedAt = null;
+        for (let i = 0; i < maxLines; i++) {
+            byteBudget -= (origLines[i] ? origLines[i].length + 1 : 1);
+            if (byteBudget <= 0) {
+                byteCappedAt = i + 1;
+                break;
+            }
+        }
+        if (byteCappedAt !== null && byteCappedAt < maxLines) {
+            maxLines = byteCappedAt;
+            truncated = true;
+        }
+
+        // Precompute the replacement values for config rules so the scrubbed-
+        // side highlighter knows what to look for beyond the built-in tokens.
+        const configReplacements = gatherConfigReplacements();
+
+        // Build line elements. For alignment, when one side has fewer lines,
+        // we pad with empty lines on that side.
+        const origFragment = document.createDocumentFragment();
+        const scrubFragment = document.createDocumentFragment();
+
+        for (let i = 0; i < maxLines; i++) {
+            const origLine = origLines[i] !== undefined ? origLines[i] : '';
+            const scrubLine = scrubLines[i] !== undefined ? scrubLines[i] : '';
+
+            const lineChanged = origLine !== scrubLine;
+            const isCuiLine = lineChanged && scrubLine.indexOf('[CUI-REDACTED:') !== -1;
+
+            // Original-side highlighting: mark the ranges that WOULD be
+            // scrubbed (built-in patterns + config search-terms + CUI markings).
+            const origSpan = makeHighlightedLineSpan(origLine, highlightRangesForOriginal(origLine, configReplacements));
+
+            // Scrubbed-side highlighting: mark the replacement tokens present
+            // in the output (built-in replacements + config replacement values
+            // + CUI placeholders).
+            const scrubSpan = makeHighlightedLineSpan(scrubLine, highlightRangesForScrubbed(scrubLine, configReplacements));
+
+            // Soft row background for any changed line, so quick scroll-by-
+            // scan still shows which rows changed even when a span is small.
+            if (lineChanged) {
+                const rowClass = isCuiLine ? 'line-cui' : 'line-modified';
+                origSpan.classList.add(rowClass);
+                scrubSpan.classList.add(rowClass);
+            }
+
+            origFragment.appendChild(origSpan);
+            scrubFragment.appendChild(scrubSpan);
+        }
+
+        originalPane.appendChild(origFragment);
+        scrubbedPane.appendChild(scrubFragment);
+
+        if (truncated) {
+            notice.hidden = false;
+            notice.textContent =
+                'Showing first ' + maxLines + ' lines of ' + lineCount +
+                '. The full scrubbed file is downloadable above.';
+        }
+
+        // Synchronized scrolling
+        setupSyncedScroll(originalPane, scrubbedPane);
+    }
+
+    // ----------------------------------------------------------------------
+    // Per-field highlighting (Option B: replacement-aware)
+    //
+    // Rather than running a general-purpose text diff, we exploit the fact
+    // that we OWN the scrubber: we know every pattern it looks for, and
+    // every replacement token it writes. So we can highlight precisely the
+    // things the scrubber cares about, categorized by type, on both the
+    // original and scrubbed sides.
+    //
+    // Each highlighter returns a list of {start, end, kind} ranges which
+    // are then merged (overlaps resolved, first-wins) and rendered as
+    // <span class="hl-<kind>"> wrappers.
+    //
+    // Categories:
+    //   'pii' - PII / credential / token redactions (yellow)
+    //   'cui' - CUI marking redactions (orange)
+    //   'custom' - config-rule replacements (soft red)
+    // ----------------------------------------------------------------------
+
+    function gatherConfigReplacements() {
+        // Extract unique literal replacement tokens from the active config so
+        // we can find them in the scrubbed output. Random-mode rules contribute
+        // all their choices. Duplicates are deduplicated. The search-term side
+        // (used for original-side highlighting) is a separate list.
+        const replacementTokens = new Set();
+        const searchTerms = new Set();
+
+        for (const [term, mode, values] of activeConfig.textRules) {
+            searchTerms.add(term);
+            if (mode === 'random') {
+                values.split(',').map(v => v.trim()).filter(Boolean)
+                      .forEach(v => replacementTokens.add(v));
+            } else {
+                if (values) replacementTokens.add(values);
+            }
+        }
+        for (const [field, mode, values] of activeConfig.jsonFieldRules) {
+            if (mode === 'random') {
+                values.split(',').map(v => v.trim()).filter(Boolean)
+                      .forEach(v => replacementTokens.add(v));
+            } else {
+                if (values) replacementTokens.add(values);
+            }
+        }
+
+        // Drop empty strings and very short tokens (< 2 chars) to avoid
+        // matching incidental characters like a literal '-' or ','.
+        const filterSet = (s) => Array.from(s).filter(t => t && t.length >= 2);
+        return {
+            replacementTokens: filterSet(replacementTokens),
+            searchTerms: filterSet(searchTerms),
+        };
+    }
+
+    // Built-in PII/token patterns used to locate sensitive content in the
+    // ORIGINAL text. Mirrors the SUMMARY_CATEGORIES patterns. We also include
+    // a pattern for the whole CUI-marking category so we can tag original-side
+    // spans as 'cui' vs 'pii'.
+    const ORIGINAL_PII_PATTERNS = [
+        /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g,                               // IP
+        /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,                  // email
+        /\bip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\b/g,                               // AWS ip-host
+        /\b[A-Z][A-Z0-9_-]+\\[a-zA-Z0-9._-]+\b/g,                                // DOMAIN\user
+        /\\\\[a-zA-Z0-9._-]+\\[a-zA-Z0-9._$-]+/g,                                // UNC
+        /\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g,                            // MAC
+        /\b(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g,                // SSN
+        /(?<!\d)(?:\+?1[-. ]?)?\(?\d{3}\)?[-. ]\d{3}[-. ]\d{4}(?!\d)/g,          // phone
+        /\bS-1-5-21-\d+-\d+-\d+-\d+\b/g,                                         // Windows SID
+        /\b(AKIA|ASIA)[0-9A-Z]{16}\b/g,                                          // AWS key
+        /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,                // JWT
+        /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g,                                       // GitHub PAT
+        /\bxox[baprs]-[0-9a-zA-Z-]{10,}\b/g,                                     // Slack
+        /\bsk_(?:live|test)_[0-9a-zA-Z]{24,}\b/g,                                // Stripe
+        /\bAIza[0-9A-Za-z\-_]{35}\b/g,                                           // Google API
+        /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----/g,
+        /Authorization\s*:\s*(?:Bearer|Basic|Digest|Token)\s+\S+/gi,             // auth header
+        // FQDNs excluding well-known-public (mirrors scrubber logic)
+        new RegExp(
+            '\\b(?!(?:schemas\\.microsoft\\.com|schemas\\.xmlsoap\\.org|' +
+            'schemas\\.openxmlformats\\.org|www\\.w3\\.org|www\\.iana\\.org|' +
+            'xmlns\\.com|tools\\.ietf\\.org|docs\\.oasis-open\\.org|' +
+            'purl\\.org|ns\\.adobe\\.com)\\b)' +
+            '[a-zA-Z0-9-]+\\.[a-zA-Z0-9-]+\\.(?:com|net|org|io|local|internal)\\b',
+            'g'
+        ),
+    ];
+
+    // CUI markings - these redact an entire line; highlight the marking
+    // itself so the user sees what triggered the whole-line redaction.
+    const ORIGINAL_CUI_PATTERNS = [
+        /\b(CUI|CONTROLLED)(?:\/\/(?:SP-[A-Z]+|BASIC|NOFORN|FEDCON|FED ONLY|DL ONLY|REL TO [A-Z, ]+))*\b/g,
+        /\((CUI|U\/\/FOUO|U\/\/SBU|U\/\/LES|C|U|FOUO|SBU|LES)(?:\/\/[A-Z-]+)?\)/g,
+        /\b(FOUO|SBU|LES|OUO|LIMDIS|NOFORN|FEDCON|ORCON)\b/g,
+        /\b(ITAR|EAR99|ECCN\s*[0-9A-Z]+|DD\s*254|FCI)\b/g,
+    ];
+
+    function highlightRangesForOriginal(line, configReplacements) {
+        if (!line) return [];
+        const ranges = [];
+
+        for (const re of ORIGINAL_PII_PATTERNS) {
+            re.lastIndex = 0;
+            let m;
+            while ((m = re.exec(line)) !== null) {
+                // Credit-card pattern is handled separately because Luhn-validation
+                // is required (not done here - we only highlight candidates).
+                ranges.push({ start: m.index, end: m.index + m[0].length, kind: 'pii' });
+                if (m[0].length === 0) re.lastIndex++;
+            }
+        }
+
+        // CC candidate + Luhn validation
+        const ccRe = /\b\d(?:[ -]?\d){12,18}\b/g;
+        let cm;
+        while ((cm = ccRe.exec(line)) !== null) {
+            const digits = cm[0].replace(/\D/g, '');
+            if (window.Paydirt.luhnValid(digits)) {
+                ranges.push({ start: cm.index, end: cm.index + cm[0].length, kind: 'pii' });
+            }
+            if (cm[0].length === 0) ccRe.lastIndex++;
+        }
+
+        for (const re of ORIGINAL_CUI_PATTERNS) {
+            re.lastIndex = 0;
+            let m;
+            while ((m = re.exec(line)) !== null) {
+                ranges.push({ start: m.index, end: m.index + m[0].length, kind: 'cui' });
+                if (m[0].length === 0) re.lastIndex++;
+            }
+        }
+
+        // Config search-term literal matches. Apply a word-boundary check to
+        // avoid highlighting a substring that happens to appear inside a
+        // longer token (e.g., '000000000000' inside hex '0x8020000000000000'
+        // would otherwise be flagged as a custom-rule match).
+        for (const term of configReplacements.searchTerms) {
+            let idx = 0;
+            while ((idx = line.indexOf(term, idx)) !== -1) {
+                if (isWordBoundaryMatch(line, idx, term.length)) {
+                    ranges.push({ start: idx, end: idx + term.length, kind: 'custom' });
+                }
+                idx += term.length;
+            }
+        }
+
+        return resolveOverlaps(ranges);
+    }
+
+    // Returns true if the substring at [start, start+length) is bordered on
+    // both sides by non-word characters (or string boundary). Mirrors the
+    // behavior of a regex \b on either side of a plain indexOf match. Used
+    // to avoid false-positive highlighting when a short replacement token
+    // happens to appear as a substring of a longer identifier.
+    //
+    // Word character = [A-Za-z0-9_]. If the token's first or last character
+    // is already non-word (e.g. '@acme.com' starts with '@'), that side is
+    // treated as a boundary because a word-boundary requires a word-to-
+    // non-word transition and we don't have one to violate there.
+    function isWordBoundaryMatch(text, start, length) {
+        const end = start + length;
+        const WORD_CHAR = /[A-Za-z0-9_]/;
+        const firstChar = text[start];
+        const lastChar = text[end - 1];
+        if (WORD_CHAR.test(firstChar)) {
+            // Left side must be start-of-line or a non-word char
+            if (start > 0 && WORD_CHAR.test(text[start - 1])) return false;
+        }
+        if (WORD_CHAR.test(lastChar)) {
+            // Right side must be end-of-line or a non-word char
+            if (end < text.length && WORD_CHAR.test(text[end])) return false;
+        }
+        return true;
+    }
+
+    // Replacement tokens the scrubber writes into the output. Mirrors the
+    // Python+JS replacement values exactly.
+    const SCRUBBED_REPLACEMENT_TOKENS = [
+        { pattern: /10\.0\.0\.x/g, kind: 'pii' },
+        { pattern: /user@example\.com/g, kind: 'pii' },
+        { pattern: /ip-10-0-0-x/g, kind: 'pii' },
+        { pattern: /host\.example\.com/g, kind: 'pii' },
+        { pattern: /\\\\SERVER\\SHARE/g, kind: 'pii' },
+        { pattern: /\bDOMAIN\\user\b/g, kind: 'pii' },
+        { pattern: /00:00:00:00:00:00/g, kind: 'pii' },
+        { pattern: /000-00-0000/g, kind: 'pii' },
+        { pattern: /4111-1111-1111-1111/g, kind: 'pii' },
+        { pattern: /555-555-5555/g, kind: 'pii' },
+        { pattern: /S-1-5-21-0-0-0-0/g, kind: 'pii' },
+        { pattern: /\bAKIAREDACTEDREDACTED\b/g, kind: 'pii' },
+        { pattern: /\beyJREDACTED\.REDACTED\.REDACTED\b/g, kind: 'pii' },
+        { pattern: /\bghp_REDACTED\b/g, kind: 'pii' },
+        { pattern: /\bxoxb-REDACTED\b/g, kind: 'pii' },
+        { pattern: /\bsk_test_REDACTED\b/g, kind: 'pii' },
+        { pattern: /\bAIzaREDACTED\b/g, kind: 'pii' },
+        { pattern: /\[REDACTED_PRIVATE_KEY\]/g, kind: 'pii' },
+        { pattern: /1234567893/g, kind: 'pii' },  // NPI replacement
+        { pattern: /(Authorization\s*:\s*(?:Bearer|Basic|Digest|Token))\s+REDACTED\b/gi, kind: 'pii' },
+        { pattern: /([?&](?:password|passwd|pwd|token|api_key|apikey|access_token|refresh_token|auth|authorization|secret|session|sessionid|sid)=)REDACTED\b/gi, kind: 'pii' },
+        // CUI placeholder
+        { pattern: /\[CUI-REDACTED: [^\]]+\]/g, kind: 'cui' },
+    ];
+
+    function highlightRangesForScrubbed(line, configReplacements) {
+        if (!line) return [];
+        const ranges = [];
+
+        for (const { pattern, kind } of SCRUBBED_REPLACEMENT_TOKENS) {
+            pattern.lastIndex = 0;
+            let m;
+            while ((m = pattern.exec(line)) !== null) {
+                ranges.push({ start: m.index, end: m.index + m[0].length, kind });
+                if (m[0].length === 0) pattern.lastIndex++;
+            }
+        }
+
+        // Config replacement tokens: literal-match each unique replacement,
+        // with word-boundary checks so zero-padded hex or longer identifiers
+        // that happen to contain a replacement token as a substring are not
+        // incorrectly highlighted.
+        for (const token of configReplacements.replacementTokens) {
+            let idx = 0;
+            while ((idx = line.indexOf(token, idx)) !== -1) {
+                if (isWordBoundaryMatch(line, idx, token.length)) {
+                    ranges.push({ start: idx, end: idx + token.length, kind: 'custom' });
+                }
+                idx += token.length;
+            }
+        }
+
+        return resolveOverlaps(ranges);
+    }
+
+    function resolveOverlaps(ranges) {
+        // Sort by start, then by earlier-end-first so we get a stable order.
+        // Then walk the list and drop any range that starts before the previous
+        // one ended. First-wins so PII patterns take precedence over FQDN,
+        // and so on. Good enough for visual highlighting.
+        if (ranges.length <= 1) return ranges;
+        const sorted = ranges.slice().sort((a, b) =>
+            a.start - b.start || a.end - b.end);
+        const out = [sorted[0]];
+        for (let i = 1; i < sorted.length; i++) {
+            const r = sorted[i];
+            const last = out[out.length - 1];
+            if (r.start >= last.end) {
+                out.push(r);
+            }
+            // else: skip (overlap, first-wins)
+        }
+        return out;
+    }
+
+    function makeHighlightedLineSpan(line, ranges) {
+        // Build a line element that mixes plain text with highlighted spans.
+        // textContent is used for each piece to preserve XSS-safety (no HTML
+        // injection from user data).
+        const lineSpan = document.createElement('span');
+        lineSpan.className = 'comparison-line';
+        if (line.length === 0) {
+            lineSpan.textContent = '\u200B';  // zero-width space so row is visible
+            return lineSpan;
+        }
+
+        if (ranges.length === 0) {
+            lineSpan.textContent = line;
+            return lineSpan;
+        }
+
+        let cursor = 0;
+        for (const r of ranges) {
+            // Text before this range
+            if (r.start > cursor) {
+                lineSpan.appendChild(document.createTextNode(line.substring(cursor, r.start)));
+            }
+            // Highlighted range
+            const hl = document.createElement('span');
+            hl.className = 'hl hl-' + r.kind;
+            hl.textContent = line.substring(r.start, r.end);
+            lineSpan.appendChild(hl);
+            cursor = r.end;
+        }
+        // Trailing text
+        if (cursor < line.length) {
+            lineSpan.appendChild(document.createTextNode(line.substring(cursor)));
+        }
+        return lineSpan;
+    }
+
+    function setupSyncedScroll(paneA, paneB) {
+        // Bidirectional synced scrolling. A flag prevents feedback loops when
+        // one pane's programmatic scroll triggers the other's scroll handler.
+        let syncing = false;
+        function sync(source, target) {
+            if (syncing) return;
+            syncing = true;
+            // Percentage-based sync so different content heights still track
+            const sMax = source.scrollHeight - source.clientHeight;
+            const tMax = target.scrollHeight - target.clientHeight;
+            if (sMax > 0 && tMax > 0) {
+                target.scrollTop = (source.scrollTop / sMax) * tMax;
+            } else {
+                target.scrollTop = source.scrollTop;
+            }
+            target.scrollLeft = source.scrollLeft;
+            // Release the lock after the scroll event has been processed
+            requestAnimationFrame(() => { syncing = false; });
+        }
+        paneA.addEventListener('scroll', () => sync(paneA, paneB));
+        paneB.addEventListener('scroll', () => sync(paneB, paneA));
+    }
+
+    // ----------------------------------------------------------------------
+    // Summary tab
+    // ----------------------------------------------------------------------
+
+    function populateSummary(card, original, scrubbed) {
+        const container = card.querySelector('.summary-content');
+        const counts = computeRedactionCounts(original, scrubbed);
+        const totalRedactions = counts.reduce((sum, c) => sum + c.count, 0);
+        const usingDefaults = (activeConfig === builtInConfig);
+
+        if (totalRedactions === 0) {
+            const clean = document.createElement('div');
+            clean.className = 'summary-clean-notice';
+            clean.textContent = 'No sensitive data was detected or redacted. Review the original manually to confirm.';
+            container.appendChild(clean);
+
+            // Extra nudge when nothing matched AND the user hasn't customized.
+            if (usingDefaults) {
+                container.appendChild(makeConfigNudge(
+                    "Most real-world logs contain environment-specific identifiers " +
+                    "(internal hostnames, usernames, project codenames) that Paydirt " +
+                    "can't recognize without your help. Click 'Download template' in " +
+                    "the Configuration section above to get a starter config you can " +
+                    "edit with your own rules."
+                ));
+            }
+        } else {
+            const group = document.createElement('div');
+            group.className = 'summary-group';
+            const title = document.createElement('h3');
+            title.className = 'summary-group-title';
+            title.textContent = 'Redactions';
+            group.appendChild(title);
+
+            const countsEl = document.createElement('div');
+            countsEl.className = 'summary-counts';
+            counts.forEach(c => {
+                if (c.count === 0) return;
+                const row = document.createElement('div');
+                row.className = 'summary-count';
+                const label = document.createElement('span');
+                label.className = 'summary-count-label';
+                label.textContent = c.label;
+                const value = document.createElement('span');
+                value.className = 'summary-count-value';
+                value.textContent = c.count.toString();
+                row.appendChild(label);
+                row.appendChild(value);
+                countsEl.appendChild(row);
+            });
+            group.appendChild(countsEl);
+            container.appendChild(group);
+
+            // Low-redaction nudge: user got SOMETHING but using defaults and
+            // the count seems light for a real log file.
+            const looksLight = totalRedactions < 3 || (totalRedactions / Math.max(1, original.length / 1024) < 0.5);
+            if (usingDefaults && looksLight) {
+                container.appendChild(makeConfigNudge(
+                    "Only " + totalRedactions + " redaction" + (totalRedactions === 1 ? '' : 's') +
+                    " with the built-in defaults. Real log data usually contains " +
+                    "environment-specific identifiers (hostnames, usernames, custom IDs) " +
+                    "that need explicit rules. Click 'Download template' in the " +
+                    "Configuration section above to start customizing."
+                ));
+            }
+        }
+
+        // Metadata footer: config source, input/output bytes, timestamp
+        const meta = document.createElement('div');
+        meta.className = 'summary-meta';
+        const metaItems = [
+            { label: 'Config', value: activeConfig.source },
+            { label: 'Original', value: formatBytes(original.length) },
+            { label: 'Scrubbed', value: formatBytes(scrubbed.length) },
+            { label: 'Scrubbed at', value: new Date().toLocaleString() },
+        ];
+        metaItems.forEach(item => {
+            const row = document.createElement('span');
+            row.className = 'summary-meta-item';
+            const l = document.createElement('span');
+            l.className = 'summary-meta-item-label';
+            l.textContent = item.label + ':';
+            const v = document.createElement('span');
+            v.className = 'summary-meta-item-value';
+            v.textContent = item.value;
+            row.appendChild(l);
+            row.appendChild(v);
+            meta.appendChild(row);
+        });
+        container.appendChild(meta);
+    }
+
+    function makeConfigNudge(message) {
+        // Build a styled info panel for guiding users toward custom configs.
+        // Used in the Summary tab when zero or very few redactions occurred
+        // while the user is still on the built-in defaults.
+        const nudge = document.createElement('div');
+        nudge.className = 'summary-nudge';
+        const icon = document.createElement('span');
+        icon.className = 'summary-nudge-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = 'i';
+        const text = document.createElement('span');
+        text.className = 'summary-nudge-text';
+        text.textContent = message;
+        nudge.appendChild(icon);
+        nudge.appendChild(text);
+        return nudge;
+    }
+
+    function computeRedactionCounts(original, scrubbed) {
+        // For each category, count how many matches appear in the original
+        // that do NOT survive into the scrubbed output. This gives a
+        // reasonable "things we redacted" count per category.
+        const results = [];
+
+        for (const cat of SUMMARY_CATEGORIES) {
+            let count = 0;
+
+            if (cat.matcher === 'cuiMarker') {
+                // CUI redaction is whole-line: count the [CUI-REDACTED ...]
+                // placeholders in the scrubbed text.
+                const matches = scrubbed.match(/\[CUI-REDACTED:[^\]]+\]/g);
+                count = matches ? matches.length : 0;
+            } else if (cat.matcher === 'luhnCc') {
+                // Luhn-valid credit card numbers in original that are not in scrubbed
+                const candidateRe = /\b\d(?:[ -]?\d){12,18}\b/g;
+                const origMatches = original.match(candidateRe) || [];
+                for (const m of origMatches) {
+                    const digits = m.replace(/\D/g, '');
+                    if (window.Paydirt.luhnValid(digits) && scrubbed.indexOf(m) === -1) {
+                        count++;
+                    }
+                }
+            } else if (cat.pattern) {
+                const origMatches = original.match(cat.pattern) || [];
+                for (const m of origMatches) {
+                    // A match was redacted if it doesn't appear in the scrubbed output,
+                    // OR if it's equal to the replacement token (already scrubbed input).
+                    if (cat.ignoreReplacement && m === cat.ignoreReplacement) continue;
+                    if (scrubbed.indexOf(m) === -1) count++;
+                }
+            }
+
+            results.push({ label: cat.label, count });
+        }
+
+        // Custom rule counts: for each text rule and each @json rule, count
+        // how many times the rule's search term appears in the original that
+        // was replaced (i.e., doesn't appear in scrubbed output with the same
+        // literal text). We keep these as individual per-rule counts with a
+        // label like "Custom: MDI-LEGION" so users can see exactly which
+        // rules fired and how often.
+        for (const [term, mode, replValues] of activeConfig.textRules) {
+            if (!term) continue;
+            // Count literal occurrences in original, subtract occurrences still
+            // in scrubbed (in case the rule didn't fire on all of them).
+            const origCount = countSubstring(original, term);
+            const scrubCount = countSubstring(scrubbed, term);
+            const redacted = Math.max(0, origCount - scrubCount);
+            if (redacted > 0) {
+                results.push({
+                    label: 'Custom: ' + truncateLabel(term),
+                    count: redacted,
+                    isCustom: true,
+                });
+            }
+        }
+
+        return results;
+    }
+
+    // Count non-overlapping literal occurrences of needle in haystack.
+    function countSubstring(haystack, needle) {
+        if (!needle) return 0;
+        let count = 0;
+        let idx = 0;
+        while ((idx = haystack.indexOf(needle, idx)) !== -1) {
+            count++;
+            idx += needle.length;
+        }
+        return count;
+    }
+
+    function truncateLabel(s) {
+        return s.length > 40 ? s.substring(0, 37) + '...' : s;
+    }
+
+    // ----------------------------------------------------------------------
+    // Download
+    // ----------------------------------------------------------------------
+
+    function downloadText(text, filename) {
+        // Build a Blob and trigger a download via a temporary anchor tag.
+        // No network round-trip, no third-party services.
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Revoke URL after a short delay so the download has time to start
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ----------------------------------------------------------------------
+    // Processing overlay
+    // ----------------------------------------------------------------------
+
+    function showProcessing(text) {
+        dom.processingText.textContent = text || 'Scrubbing...';
+        dom.processingOverlay.hidden = false;
+    }
+
+    function hideProcessing() {
+        dom.processingOverlay.hidden = true;
+    }
+
+    // ----------------------------------------------------------------------
+    // Utilities
+    // ----------------------------------------------------------------------
+
+    function formatBytes(n) {
+        if (n < 1024) return n + ' B';
+        if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+        return (n / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // ----------------------------------------------------------------------
+    // Go
+    // ----------------------------------------------------------------------
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+</body>
+</html>

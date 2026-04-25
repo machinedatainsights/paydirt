@@ -1,0 +1,324 @@
+# ============================================================================
+# Paydirt - Demonstration Log File
+# Machine Data Insights Inc. | machinedatainsights.com
+# ============================================================================
+#
+# Purpose: A single file exercising every scrubbing category Paydirt and
+# log_scrubber.py handle. Drop this into Paydirt to verify that every
+# category of sensitive data gets redacted correctly, plus that a set of
+# deliberately-safe strings are left alone (negative test cases).
+#
+# How to use:
+#   1. Open Paydirt.html in your browser
+#   2. Drop this file onto the drop zone (or click "choose files")
+#   3. Click the "Comparison" tab on the result card
+#   4. Scroll through each section and verify that the scrubbed side shows
+#      the expected redactions from each category
+#
+# Each section below is marked with a "# SECTION N:" header describing what
+# the section demonstrates. The section headers are themselves comments,
+# so they pass through unscrubbed and serve as landmarks in the output.
+#
+# Sections labeled "NEGATIVE TEST CASES" contain entries that LOOK like
+# they should be scrubbed but shouldn't be. If those survive intact, the
+# scrubber is behaving correctly (not over-scrubbing).
+#
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# SECTION 1: IP ADDRESSES
+# Expect: every IPv4 address replaced with "10.0.0.x".
+# ----------------------------------------------------------------------------
+2026-04-24T09:00:01Z firewall: inbound connection from 203.0.113.45 to 10.42.17.8 permitted
+2026-04-24T09:00:02Z proxy: user session opened via 192.0.2.100 to backend 172.19.4.22
+2026-04-24T09:00:03Z syslog: heartbeat received from 198.51.100.9 on interface eth0
+
+
+# ----------------------------------------------------------------------------
+# SECTION 2: EMAIL ADDRESSES
+# Expect: every email replaced with "user@example.com".
+# ----------------------------------------------------------------------------
+2026-04-24T09:01:10Z auth: password reset requested by jane.doe@acmecorp.com
+2026-04-24T09:01:11Z auth: login failure for user admin@internal-corp.net from unknown device
+2026-04-24T09:01:12Z mail: relay denied for noreply-alerts+ops@subsidiary.example.co.uk
+
+
+# ----------------------------------------------------------------------------
+# SECTION 3: HOSTNAMES / FQDNs
+# Expect: FQDNs replaced with "host.example.com". Well-known public schema
+# hosts (see SECTION 3b) are left alone.
+# ----------------------------------------------------------------------------
+2026-04-24T09:02:20Z dns: query A? server-prod-01.internal.com returned 10.0.5.12
+2026-04-24T09:02:21Z http: GET request to api.internal-services.net/healthcheck status=200
+2026-04-24T09:02:22Z ldap: bind successful to ldap01.acme-subsidiary.org:636
+
+
+# ----------------------------------------------------------------------------
+# SECTION 3b: NEGATIVE TEST CASE - well-known public schema hosts
+# Expect: these should NOT be scrubbed. They are industry-standard public
+# namespace URIs that appear routinely in XML/JSON and are never sensitive.
+# ----------------------------------------------------------------------------
+2026-04-24T09:02:30Z xml-parser: namespace declared xmlns='http://schemas.microsoft.com/win/2004/08/events/event'
+2026-04-24T09:02:31Z soap-client: loaded schema from http://schemas.xmlsoap.org/soap/envelope/
+2026-04-24T09:02:32Z ietf: parsing RFC reference https://tools.ietf.org/html/rfc5424
+
+
+# ----------------------------------------------------------------------------
+# SECTION 4: AWS ip- EC2 HOSTNAMES
+# Expect: AWS internal DNS names replaced with "ip-10-0-0-x".
+# ----------------------------------------------------------------------------
+2026-04-24T09:03:30Z aws-ec2: instance ip-10-50-26-117.us-gov-west-1.compute.internal started
+2026-04-24T09:03:31Z cloudwatch: metric published by ip-172-31-18-204 for CPU utilization
+2026-04-24T09:03:32Z eks-node: pod scheduled on ip-10-100-45-88.ec2.internal
+
+
+# ----------------------------------------------------------------------------
+# SECTION 5: WINDOWS DOMAIN USERNAMES (DOMAIN\user format)
+# Expect: UPPERCASE_DOMAIN\username patterns replaced with "DOMAIN\user".
+# ----------------------------------------------------------------------------
+2026-04-24T09:04:40Z winlogon: user CORP\alice.williams signed in interactively
+2026-04-24T09:04:41Z security: failed logon CONTOSO\bob_jones from workstation WS-42
+2026-04-24T09:04:42Z winlogon: session opened for NT AUTHORITY\SYSTEM on service startup
+
+
+# ----------------------------------------------------------------------------
+# SECTION 6: UNC PATHS
+# Expect: \\server\share replaced with \\SERVER\SHARE.
+# ----------------------------------------------------------------------------
+2026-04-24T09:05:50Z file-audit: access granted to \\fileserver-03\finance_reports
+2026-04-24T09:05:51Z backup: copying \\prod-nas-01\user_homes to offline storage
+
+
+# ----------------------------------------------------------------------------
+# SECTION 7: MAC ADDRESSES
+# Expect: MAC addresses (colon or hyphen separators) replaced with all zeros.
+# ----------------------------------------------------------------------------
+2026-04-24T09:06:00Z dhcp: lease issued for client MAC 00:1A:2B:3C:4D:5E
+2026-04-24T09:06:01Z arp: resolved 10.0.1.15 -> B4-26-AC-1F-88-FF on vlan 100
+2026-04-24T09:06:02Z wifi: device fc:aa:14:22:91:03 joined the corporate network
+
+
+# ----------------------------------------------------------------------------
+# SECTION 8: US SOCIAL SECURITY NUMBERS
+# Expect: valid SSNs replaced with "000-00-0000". Invalid SSA ranges are
+# preserved (see SECTION 8b).
+# ----------------------------------------------------------------------------
+2026-04-24T09:07:10Z hr-audit: employee record updated ssn=123-45-6789 status=active
+2026-04-24T09:07:11Z benefits: dependent enrollment for 234-56-7890 processed
+2026-04-24T09:07:12Z tax-form: W-4 filed for 456-78-9012 filing_status=single
+
+
+# ----------------------------------------------------------------------------
+# SECTION 8b: NEGATIVE TEST CASE - invalid SSN ranges
+# Expect: these should NOT be scrubbed. The SSA has never issued SSNs with
+# these patterns, so redacting them would be a false positive.
+#   - 000-xx-xxxx: 000 area number is invalid
+#   - 666-xx-xxxx: 666 area number is invalid
+#   - 9xx-xx-xxxx: 900-999 area numbers are invalid (ITIN range)
+#   - xxx-00-xxxx: 00 group number is invalid
+#   - xxx-xx-0000: 0000 serial number is invalid
+# ----------------------------------------------------------------------------
+2026-04-24T09:07:20Z fraud-detection: suspicious record 000-12-3456 flagged for review
+2026-04-24T09:07:21Z fraud-detection: suspicious record 666-45-6789 flagged for review
+2026-04-24T09:07:22Z fraud-detection: suspicious record 987-65-4321 flagged for review
+2026-04-24T09:07:23Z fraud-detection: suspicious record 123-00-4567 flagged for review
+2026-04-24T09:07:24Z fraud-detection: suspicious record 123-45-0000 flagged for review
+
+
+# ----------------------------------------------------------------------------
+# SECTION 9: CREDIT CARD NUMBERS (LUHN-VALIDATED)
+# Expect: Luhn-valid card numbers replaced with "4111-1111-1111-1111".
+# Random 16-digit sequences that fail Luhn are preserved (SECTION 9b).
+# ----------------------------------------------------------------------------
+2026-04-24T09:08:20Z payments: authorization card=4532015112830366 amount=129.99 result=approved
+2026-04-24T09:08:21Z refund: processing refund for card ending 5425-2334-3010-9903
+2026-04-24T09:08:22Z payments: tokenization request for 378282246310005 (amex test)
+
+
+# ----------------------------------------------------------------------------
+# SECTION 9b: NEGATIVE TEST CASE - Luhn-invalid 16-digit sequences
+# Expect: these should NOT be scrubbed. Random 16-digit strings that don't
+# satisfy the Luhn check are not credit card numbers - typically they are
+# order IDs, transaction IDs, or other numeric identifiers.
+# ----------------------------------------------------------------------------
+2026-04-24T09:08:30Z order-system: order_id=1234567890123456 created by service account
+2026-04-24T09:08:31Z session-store: session_token=9999888877776666 expires in 3600s
+
+
+# ----------------------------------------------------------------------------
+# SECTION 10: US PHONE NUMBERS
+# Expect: common phone formats replaced with "555-555-5555".
+# ----------------------------------------------------------------------------
+2026-04-24T09:09:30Z voicemail: missed call from (555) 234-5678 routed to ext 4021
+2026-04-24T09:09:31Z sms-gateway: message delivered to +1-212-555-0199 status=queued
+2026-04-24T09:09:32Z crm: contact updated phone=415.555.2348 for account ABC-9921
+
+
+# ----------------------------------------------------------------------------
+# SECTION 11: WINDOWS SECURITY IDENTIFIERS (user SIDs)
+# Expect: user-specific SIDs (S-1-5-21-*) replaced with "S-1-5-21-0-0-0-0".
+# Well-known SIDs are preserved (SECTION 11b).
+# ----------------------------------------------------------------------------
+2026-04-24T09:10:40Z winlogon: impersonation of S-1-5-21-1004336348-1177238915-682003330-1013
+2026-04-24T09:10:41Z gpo: policy applied for S-1-5-21-3623811015-3361044348-30300820-1001
+
+
+# ----------------------------------------------------------------------------
+# SECTION 11b: NEGATIVE TEST CASE - well-known SIDs
+# Expect: these should NOT be scrubbed. Well-known SIDs identify system
+# principals and are the same on every Windows system - they do not
+# identify any specific user or organization.
+#   - S-1-5-18 = LOCAL SYSTEM
+#   - S-1-5-19 = LOCAL SERVICE
+#   - S-1-5-20 = NETWORK SERVICE
+# ----------------------------------------------------------------------------
+2026-04-24T09:10:50Z winlogon: service running as S-1-5-18 (LOCAL SYSTEM)
+2026-04-24T09:10:51Z winlogon: scheduled task impersonating S-1-5-19 (LOCAL SERVICE)
+2026-04-24T09:10:52Z winlogon: iis worker using S-1-5-20 (NETWORK SERVICE)
+
+
+# ----------------------------------------------------------------------------
+# SECTION 12: AWS ACCESS KEYS
+# Expect: AKIA* (long-term) and ASIA* (STS) access key IDs replaced with
+# "AKIAREDACTEDREDACTED".
+# ----------------------------------------------------------------------------
+2026-04-24T09:11:50Z cloudtrail: CreateBucket called by AKIAIOSFODNN7EXAMPLE from 203.0.113.5
+2026-04-24T09:11:51Z sts: temporary credentials issued ASIAQ7QN3GNB4KZDEMO0 for role admin
+
+
+# ----------------------------------------------------------------------------
+# SECTION 13: JSON WEB TOKENS (JWTs)
+# Expect: three-segment base64url tokens (eyJ prefix) replaced entirely.
+# ----------------------------------------------------------------------------
+2026-04-24T09:12:00Z api-gateway: Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+2026-04-24T09:12:01Z sso: id_token exchanged eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzIn0.signature_goes_here
+
+
+# ----------------------------------------------------------------------------
+# SECTION 14: GITHUB PERSONAL ACCESS TOKENS
+# Expect: ghp_ / gho_ / ghu_ / ghs_ / ghr_ prefixed tokens replaced.
+# ----------------------------------------------------------------------------
+2026-04-24T09:13:10Z ci: cloning repo with token ghp_16C7e42F292c6912E7710c838347Ae178B4a2aBc
+2026-04-24T09:13:11Z action: OAuth exchange completed gho_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789Xy
+
+
+# ----------------------------------------------------------------------------
+# SECTION 15: SLACK TOKENS
+# Expect: xox[baprs]- prefixed tokens replaced.
+# ----------------------------------------------------------------------------
+2026-04-24T09:14:20Z slack-bot: authenticated with xoxb-123456789012-1234567890123-abcdefghijklmnopqrstuvwx
+2026-04-24T09:14:21Z slack-app: user token refresh xoxp-987654321098-765432109876-zyxwvutsrqponmlkjihgfedc
+
+
+# ----------------------------------------------------------------------------
+# SECTION 16: STRIPE API KEYS
+# Expect: sk_live_ and sk_test_ prefixed keys replaced.
+# ----------------------------------------------------------------------------
+2026-04-24T09:15:30Z payments: charge created with sk_live_51HqLKtDzPwGkQxYzAbCdEfGhIjKlMnOpQrSt
+2026-04-24T09:15:31Z payments: test run with sk_test_51HqLKtDzPwGkQxYzAbCdEfGhIjKlMnOpQrStTest
+
+
+# ----------------------------------------------------------------------------
+# SECTION 17: GOOGLE API KEYS
+# Expect: AIza prefixed 39-character keys replaced.
+# ----------------------------------------------------------------------------
+2026-04-24T09:16:40Z maps-client: request with key AIzaSyA-1234567890abcdefghijklmnopqrstu
+
+
+# ----------------------------------------------------------------------------
+# SECTION 18: HTTP AUTHORIZATION HEADERS
+# Expect: credential value after Bearer/Basic/Digest/Token scheme replaced.
+# The scheme itself is preserved.
+# ----------------------------------------------------------------------------
+2026-04-24T09:17:50Z proxy: forwarding request with Authorization: Bearer sometokenvalue123456
+2026-04-24T09:17:51Z api: incoming request Authorization: Basic dXNlcjpwYXNzd29yZA==
+2026-04-24T09:17:52Z dav: WebDAV request Authorization: Digest username="admin", realm="test"
+
+
+# ----------------------------------------------------------------------------
+# SECTION 19: URL QUERY-STRING CREDENTIALS
+# Expect: credential values in query parameters (password=, token=, api_key=,
+# etc.) replaced with REDACTED. Other query params preserved.
+# ----------------------------------------------------------------------------
+2026-04-24T09:18:00Z access-log: GET /api/v1/users?api_key=a1b2c3d4e5f6&page=2 HTTP/1.1
+2026-04-24T09:18:01Z access-log: POST /login?username=bob&password=Pa55w0rd! HTTP/1.1
+2026-04-24T09:18:02Z access-log: GET /session?token=eyJxxxxxx&format=json HTTP/1.1
+
+
+# ----------------------------------------------------------------------------
+# SECTION 20: PEM PRIVATE KEY BLOCKS
+# Expect: whole BEGIN/END block replaced with "[REDACTED_PRIVATE_KEY]".
+# Note: the block must appear on a single line for the regex to see it as
+# one event. Multi-line PEM blocks in plain-text logs need CSV-column input
+# (where the cell contains the whole block) for the scrubber to process them.
+# ----------------------------------------------------------------------------
+2026-04-24T09:19:10Z config-loader: loaded private key -----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF7s7F5rP5+demo/key/data/goes/here\nXYzQwErTyUiOpAsDfGhJkLzXcVbNmQwErTyUiOp1234567890+/=abcdefg==\n-----END RSA PRIVATE KEY-----
+
+
+# ----------------------------------------------------------------------------
+# SECTION 21: NATIONAL PROVIDER IDENTIFIER (NPI)
+# Expect: Luhn-valid 10-digit NPIs (per 45 CFR 162.406) replaced with
+# "1234567893". Random 10-digit sequences that don't satisfy the NPI Luhn
+# variant are preserved.
+# ----------------------------------------------------------------------------
+2026-04-24T09:20:20Z hipaa-audit: provider 1234567893 submitted claim CLM-88471
+2026-04-24T09:20:21Z hipaa-audit: referring provider 1528242989 approved referral
+
+
+# ----------------------------------------------------------------------------
+# SECTION 22: Controlled Unclassified Information markings (CMMC / NIST SP 800-171)
+# Expect: the entire line redacted to a placeholder. Unlike the other
+# categories, compliance markings cause whole-line redaction because the
+# marking itself is the signal that everything nearby is sensitive.
+#
+# Paydirt detects four marking styles (shown in the data lines below):
+#   - Banner style: the uppercase form of the control, with optional suffix
+#   - Portion markings: parenthesized with an in-line classification token
+#   - Legacy tags: the short acronyms used before the 2010 executive order
+#   - Adjacent classifications: export-control and defense-industry tags
+# ----------------------------------------------------------------------------
+CUI//SP-PRVCY Employee record: John Smith DOB 1980-01-15 SSN 123-45-6789
+CONTROLLED//SP-PROPIN Contract pricing detail for vendor bid submitted 2026-02-01
+(U//FOUO) Internal memo: merger discussions with target company scheduled for Q3
+FOUO: staff meeting notes regarding upcoming reorganization attached
+ITAR-controlled export specification for defense article classification 3A980
+SBU: personnel action regarding employee ID 4491 pending HR review
+
+
+# ----------------------------------------------------------------------------
+# SECTION 23: REALISTIC JSON EVENTS (CloudTrail-style)
+# Expect: the @json field rules in the default config fire on these fields
+# - sourceIPAddress, accountId, userIdentity.arn, etc. - replacing just the
+# values. Line structure is preserved because this is JSON, not a whole-line compliance redaction.
+# ----------------------------------------------------------------------------
+{"eventTime":"2026-04-24T09:21:00Z","userIdentity":{"arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","principalId":"AIDAI23HXD2O7EXAMPLE"},"sourceIPAddress":"203.0.113.42","requestParameters":{"bucketName":"production-bucket"}}
+{"eventTime":"2026-04-24T09:21:05Z","userIdentity":{"type":"AssumedRole","arn":"arn:aws:sts::999888777666:assumed-role/admin/alice"},"sourceIPAddress":"198.51.100.15","eventName":"DescribeInstances","awsRegion":"us-east-1"}
+
+
+# ----------------------------------------------------------------------------
+# SECTION 24: AWS/AZURE/GCP TAG STRUCTURES (key/value pair pattern)
+# Expect: when a JSON object has {"key": "<tag_name>", "value": "<tag_value>"}
+# and tag_name matches a config @json rule, the VALUE is replaced. This
+# handles the common cloud-tag structure across all three major providers.
+# ----------------------------------------------------------------------------
+{"tags":[{"key":"Owner","value":"alice@acmecorp.com"},{"key":"Environment","value":"production"},{"key":"CostCenter","value":"CC-4421"}]}
+
+
+# ----------------------------------------------------------------------------
+# SECTION 25: CUSTOM RULES (requires companion config)
+# Expect: if you loaded paydirt_demo_config.csv via "Load custom config",
+# the entries in this section will ALSO be redacted (hostnames, project
+# codenames, internal IDs). If you're using the built-in defaults only,
+# these entries should pass through unchanged - demonstrating that real
+# environments always need some environment-specific customization.
+# ----------------------------------------------------------------------------
+2026-04-24T09:22:00Z servicedesk: ticket TKT-MDI-44721 opened by operator on host MDI-LEGION
+2026-04-24T09:22:01Z project-system: milestone "PROJECT-THUNDERBOLT phase 2" marked complete
+2026-04-24T09:22:02Z auth: kerberos TGT issued for user alice@CORP.LOCAL on KDC dc-east-01
+2026-04-24T09:22:03Z legacy-app: license activated for SERIAL-MDI-2026-Q1-44291
+
+
+# ============================================================================
+# End of demo log
+# ============================================================================

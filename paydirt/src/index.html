@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<!--
+  SPDX-License-Identifier: Apache-2.0
+  Copyright 2026 Machine Data Insights Inc.
+  https://machinedatainsights.com
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Strict Content Security Policy: no external resources, no inline event
+      handlers, no eval. Everything loads from 'self' only.
+
+      When hosted on a web server, the server should ALSO set these headers:
+        Content-Security-Policy: frame-ancestors 'none'
+        X-Frame-Options: DENY
+        X-Content-Type-Options: nosniff
+      The frame-ancestors directive cannot be set via a meta tag (browsers
+      ignore it), so iframe-embedding protection is a hosting concern.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'self';">
+    <title>Paydirt - Log Scrubber</title>
+    <!--
+      Favicon: same glyph as the header logo, inlined as an SVG data URL.
+      No network request. Works in Firefox and Chromium. Safari ignores SVG
+      favicons (it wants .ico/.png), so tab icon silently falls back to
+      generic - acceptable trade-off given no-external-resources constraint.
+    -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect x='2' y='2' width='44' height='44' rx='6' fill='%231F2328'/><path d='M14 12 L14 36 M14 12 L28 12 Q36 12 36 20 Q36 28 28 28 L14 28' stroke='%23D4A017' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='36' cy='34' r='2.5' fill='%23D4A017'/></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <div class="brand">
+            <!-- SVG logo placeholder. MDI can swap this for their logo.
+                 Keeping it SVG-inline means no external image loads and
+                 CSP stays strict. Chosen visual: stylized "P" with a subtle
+                 gold accent, mining pickaxe implied in the negative space. -->
+            <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+                <rect x="2" y="2" width="44" height="44" rx="6" fill="#1F2328"/>
+                <path d="M14 12 L14 36 M14 12 L28 12 Q36 12 36 20 Q36 28 28 28 L14 28" stroke="#D4A017" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="36" cy="34" r="2.5" fill="#D4A017"/>
+            </svg>
+            <div class="brand-text">
+                <div class="brand-name">Paydirt</div>
+                <div class="brand-tagline">Log scrubber for Splunk exports</div>
+            </div>
+        </div>
+        <div class="header-meta">
+            <span class="version-pill" id="version-pill">v-.-.-</span>
+            <span class="offline-pill" title="All processing happens in your browser. Your data never leaves this page.">
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M5 8.5 L7 10.5 L11 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Runs locally
+            </span>
+        </div>
+    </div>
+</header>
+
+<main class="page">
+
+    <!-- Input section: drop zone, file picker, paste area -->
+    <section class="input-section" aria-labelledby="input-heading">
+        <h2 id="input-heading" class="section-heading">Input</h2>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop files here or click to choose">
+            <div class="drop-zone-content">
+                <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true">
+                    <path d="M24 6 L24 30 M14 20 L24 30 L34 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="8" y="36" width="32" height="6" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <div class="drop-zone-text">
+                    <div class="drop-zone-primary">Drop files to scrub</div>
+                    <div class="drop-zone-secondary">
+                        or <button type="button" class="link-button" id="file-picker-trigger">choose files</button> from your computer
+                    </div>
+                    <div class="drop-zone-hint">CSV, JSON, TXT - multiple files OK</div>
+                </div>
+            </div>
+            <input type="file" id="file-input" class="visually-hidden" multiple accept=".csv,.json,.jsonl,.txt,.log">
+        </div>
+
+        <details class="paste-details">
+            <summary>Or paste log text</summary>
+            <div class="paste-body">
+                <textarea id="paste-input" rows="6" placeholder="Paste log events or a Splunk export here..." spellcheck="false"></textarea>
+                <div class="paste-actions">
+                    <button type="button" class="secondary-button" id="paste-scrub-btn">Scrub pasted text</button>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <!-- Config section: shows loaded config status, allows upload -->
+    <section class="config-section" aria-labelledby="config-heading">
+        <h2 id="config-heading" class="section-heading">Configuration</h2>
+        <div class="config-status" id="config-status">
+            <div class="config-line">
+                <span class="config-label">Active config:</span>
+                <span class="config-value" id="config-source">Built-in defaults</span>
+            </div>
+            <div class="config-line">
+                <span class="config-label">Rules loaded:</span>
+                <span class="config-value" id="config-counts">- text, - @json</span>
+            </div>
+            <div class="config-actions">
+                <label class="secondary-button" for="config-file-input">
+                    Load custom config
+                </label>
+                <input type="file" id="config-file-input" class="visually-hidden" accept=".csv,.txt">
+                <button type="button" class="secondary-button" id="config-template-btn" title="Download a starter config CSV you can edit in a text editor, then load back into Paydirt">Download template</button>
+                <button type="button" class="secondary-button" id="config-export-btn" hidden title="Download the custom config currently loaded">Export current config</button>
+                <button type="button" class="secondary-button" id="config-reset-btn" hidden>Reset to defaults</button>
+                <label class="remember-config">
+                    <input type="checkbox" id="remember-config">
+                    Remember this config on this browser
+                </label>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results section: one card per file scrubbed -->
+    <section class="results-section" aria-labelledby="results-heading">
+        <div class="results-header">
+            <h2 id="results-heading" class="section-heading">Results</h2>
+            <button type="button" class="link-button" id="clear-results-btn" hidden>Clear all</button>
+        </div>
+        <div id="results-container" class="results-container">
+            <div class="results-empty" id="results-empty">
+                <p>Drop a file above to get started. Scrubbed output appears here.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-row">
+            <span>Paydirt runs entirely in your browser. Files never leave your device.</span>
+            <span class="footer-sep">&middot;</span>
+            <a href="https://machinedatainsights.com" target="_blank" rel="noopener noreferrer">Machine Data Insights</a>
+            <span class="footer-tagline">There's Gold In That Data!&trade;</span>
+        </div>
+        <div class="footer-row footer-license">
+            <span>&copy; 2026 Machine Data Insights Inc.</span>
+            <span class="footer-sep">&middot;</span>
+            <span>Licensed under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache License 2.0</a></span>
+        </div>
+    </div>
+</footer>
+
+<!-- Hidden template: the per-file result card. Cloned for each scrubbed file. -->
+<template id="result-card-template">
+    <article class="result-card">
+        <header class="result-card-header">
+            <div class="result-card-title">
+                <svg class="file-icon" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M3 1.5 L3 14.5 Q3 15 3.5 15 L12.5 15 Q13 15 13 14.5 L13 5 L9 1.5 Z M9 1.5 L9 5 L13 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+                <span class="result-filename"></span>
+                <span class="result-size"></span>
+            </div>
+            <div class="result-card-actions">
+                <button type="button" class="download-button" data-action="download">
+                    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <path d="M8 1 L8 11 M4 7 L8 11 L12 7 M2 14 L14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Download
+                </button>
+                <button type="button" class="icon-button" data-action="remove" aria-label="Remove this result">
+                    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="result-tabs" role="tablist">
+            <button type="button" class="result-tab" role="tab" data-tab="scrubbed" aria-selected="true">Scrubbed</button>
+            <button type="button" class="result-tab" role="tab" data-tab="comparison" aria-selected="false">Comparison</button>
+            <button type="button" class="result-tab" role="tab" data-tab="summary" aria-selected="false">Summary</button>
+        </div>
+
+        <div class="result-tab-panels">
+            <div class="result-tab-panel" data-panel="scrubbed" role="tabpanel">
+                <pre class="result-pre scrubbed-pre"></pre>
+                <div class="truncation-notice" hidden></div>
+            </div>
+            <div class="result-tab-panel" data-panel="comparison" role="tabpanel" hidden>
+                <div class="comparison-wrapper">
+                    <div class="comparison-column">
+                        <div class="comparison-header">Original</div>
+                        <div class="comparison-pane original-pane" tabindex="0"></div>
+                    </div>
+                    <div class="comparison-column">
+                        <div class="comparison-header">Scrubbed</div>
+                        <div class="comparison-pane scrubbed-pane" tabindex="0"></div>
+                    </div>
+                </div>
+                <div class="comparison-legend">
+                    <span class="legend-item"><span class="legend-swatch swatch-token"></span>Built-in redactions</span>
+                    <span class="legend-item"><span class="legend-swatch swatch-cui"></span>CUI redactions</span>
+                    <span class="legend-item"><span class="legend-swatch swatch-custom"></span>Custom rule redactions</span>
+                </div>
+                <div class="truncation-notice" hidden></div>
+            </div>
+            <div class="result-tab-panel" data-panel="summary" role="tabpanel" hidden>
+                <div class="summary-content"></div>
+            </div>
+        </div>
+    </article>
+</template>
+
+<!-- Processing overlay: shown during scrubbing of large files -->
+<div class="processing-overlay" id="processing-overlay" hidden>
+    <div class="processing-content">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="processing-text" id="processing-text">Scrubbing...</div>
+    </div>
+</div>
+
+<script src="scrubber.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

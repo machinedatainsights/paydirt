@@ -1,0 +1,108 @@
+# Log Scrubbing Configuration
+# For use with log_scrubber.py and Paydirt.html
+# by Machine Data Insights Inc.
+#
+# This file is loaded automatically when placed alongside log_scrubber.py,
+# or specified with --config. In Paydirt, load it via "Load custom config".
+# Comments (lines starting with #) and blank lines are ignored.
+#
+# ============================================================================
+# Text substitution rules
+# Format: search_term,replacement_mode,replacement_values
+# replacement_modes:
+#   single  - always use the given replacement
+#   random  - pick one from a comma-separated list of choices
+#
+# Values containing commas MUST be quoted with double quotes.
+# Values with only colons or slashes (e.g. ARNs, URLs) do NOT need quoting.
+# ============================================================================
+
+# Company names - customize for your organization
+ACME Corp,single,CompanyA
+ACME,single,COMP
+
+# Network ranges - add your internal ranges
+192.168,single,10.0
+172.16,single,10.1
+
+# Email domains
+@acme.com,single,@company.com
+john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.com"
+
+# ============================================================================
+# JSON field rules - @json prefix
+# Supports three config formats:
+#
+#   3-column (implicit single mode - simplest):
+#     @json,fieldName,REPLACEMENT
+#
+#   4-column explicit single mode:
+#     @json,fieldName,single,REPLACEMENT
+#
+#   4-column random mode (picks one from the list each time):
+#     @json,fieldName,random,"value1,value2,value3"
+#
+# As of v1.1.0, field names may use dot notation to target nested paths:
+#   @json,userIdentity.arn,...     - matches arn only when nested under userIdentity
+#   @json,accountId,...            - unqualified; matches at any depth (v1.0 behavior)
+# ============================================================================
+
+# AWS - common sensitive fields across CloudTrail, GuardDuty, VPC Flow, etc.
+@json,sourceIPAddress,10.0.0.x
+@json,userIdentity.arn,arn:aws:iam::000000000000:user/REDACTED
+@json,userIdentity.principalId,REDACTED_PRINCIPAL
+@json,requestParameters.bucketName,example-bucket
+@json,responseElements.instancesSet.instanceId,i-0123456789abcdef0
+@json,accountId,000000000000
+@json,account_id,000000000000
+@json,dest,i-0123456789abcdef0
+@json,BuildUser,contractor
+@json,resource.accessKeyDetails.accessKeyId,AKIAIOSFODNN7REDACTED
+@json,resource.accessKeyDetails.principalId,AROAIOSFODNN7REDACTED:session-name
+@json,resource.accessKeyDetails.userName,aws-user-redacted
+@json,resource.eksClusterDetails.arn,arn:aws:eks:us-gov-west-1:000000000000:cluster/REDACTED_CLUSTER
+@json,resource.instanceDetails.instanceId,i-0123456789abcdef0
+
+# Azure - common fields
+@json,tenantId,00000000-0000-0000-0000-000000000000
+@json,callerIpAddress,10.0.0.x
+@json,upn,user@example.com
+
+# Okta
+@json,client.ipAddress,10.0.0.x
+@json,actor.alternateId,user@example.com
+
+# Tag key-value pairs (AWS/Azure/GCP - matches {"key":"X","value":"Y"})
+@json,Owner,random,"user_a@example.com,user_b@example.com"
+@json,CreatedBy,random,"user_a@example.com,user_b@example.com"
+@json,Name,REDACTED_NAME
+@json,Environment,random,"dev,staging,production"
+
+# ============================================================================
+# v1.1.0 examples - uncomment and customize as needed
+#
+# The built-in scrubbing layers (CUI markings, credentials/tokens, SSN,
+# Luhn-validated credit cards, NPI, phone, Windows SIDs) run automatically
+# - you do NOT need config rules for those. Add rules here only for
+# environment-specific identifiers the built-ins don't know about.
+#
+# Nested path examples:
+#   @json,eventData.actor.email,user@example.com
+#   @json,http.request.headers.Authorization,REDACTED_AUTH
+#
+# Custom identifier patterns (e.g. your internal employee ID format):
+#   EMP-,single,EMP-REDACTED
+#
+# Kerberos realm (often shows up in Windows event logs):
+#   @CORP.LOCAL,single,@EXAMPLE.LOCAL
+# ============================================================================
+
+# ============================================================================
+# CUSTOM CONFIGURATIONS
+# Add your organization-specific rules below. Some examples to get started:
+#
+#   MYCOMPANY-HOST01,single,HOST-REDACTED
+#   @mycompany.internal,single,@example.com
+#   @json,myCustomFieldName,REDACTED_VALUE
+# ============================================================================
+

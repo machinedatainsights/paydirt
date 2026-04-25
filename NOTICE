@@ -1,0 +1,39 @@
+Paydirt and log_scrubber.py
+Copyright 2026 Machine Data Insights Inc.
+
+This product is licensed under the Apache License, Version 2.0 (the "License").
+A copy of the License is included in the LICENSE file accompanying this
+distribution. You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+A note on naming and attribution
+================================================================================
+
+If you fork this software, please choose a name that doesn't include "Paydirt"
+or "Machine Data Insights" so users can distinguish your fork from the original.
+The Apache License grants permission to use, modify, and redistribute the code,
+but does not grant permission to use the trade names, trademarks, or product
+names of Machine Data Insights Inc.
+
+The canonical version of these tools is maintained at:
+
+    https://machinedatainsights.com
+
+We welcome bug reports and feature suggestions via email. We do not accept
+pull requests on the public repository - this is a deliberate policy to keep
+the project lightweight to maintain. If you have improvements you'd like to
+share, please feel free to fork the project and publish your version under
+a different name, and let us know - we may incorporate similar improvements
+into the canonical version when appropriate.
+
+================================================================================
+Trademark notice
+================================================================================
+
+"Paydirt", "Machine Data Insights", and "There's Gold In That Data!" are
+trademarks of Machine Data Insights Inc. The Apache License does not grant
+permission to use these marks. Use of the marks for purposes of describing
+the origin of the Work and reproducing the content of this NOTICE file is
+permitted; other use requires written permission.
