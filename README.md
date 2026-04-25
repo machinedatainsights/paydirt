@@ -535,6 +535,6 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ---
 
-**Machine Data Insights Inc.** *"There's Gold In That Data!"(TM)* | [machinedatainsights.com](https://machinedatainsights.com)  
+**Machine Data Insights Inc.** *"There's Gold In That Data!"™* | [machinedatainsights.com](https://machinedatainsights.com)  
   
 *Version 1.2.0 - April 24, 2026*
