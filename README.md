@@ -1,5 +1,23 @@
 # Paydirt + Log Scrubber
 
+A self-contained browser tool plus matching Python CLI for scrubbing
+sensitive data from Splunk log exports. Drop a file, get a sanitized
+version - no install, no network calls, nothing leaves your machine.
+CMMC, HIPAA, and GDPR aware. By Machine Data Insights.
+
+## Download
+
+**Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
+
+- [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - the browser tool. Save the file, double-click to open in your browser. No install required.
+- [log_scrubber.py](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubber.py) - the Python CLI. Requires Python 3.9 or later. No other dependencies.
+- [log_scrubbing_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubbing_config.csv) - the default configuration file (optional - both tools have built-in defaults).
+
+For the demo log file and companion config, see the
+[Try It Yourself](#try-it-yourself) section below.
+
+## What It Does
+
 Log scrubbing tools for removing CUI, PII, PHI, credentials, and other
 sensitive data from Splunk field-value exports and log samples. Two
 interchangeable implementations of the same scrubbing algorithm:
@@ -21,6 +39,13 @@ phone), GDPR (personal data including IPs and device identifiers).
 
 **No dependencies** beyond Python 3.9+ standard library for the CLI, and
 no dependencies at all for the browser tool (pure HTML/CSS/JS, runs offline).
+
+## Documentation
+
+- This README is the canonical project documentation
+- [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md) - CLI quick-start, condensed for users who just want to scrub their first file
+- [`docs/COMPLIANCE_PRIMER.md`](docs/COMPLIANCE_PRIMER.md) - plain-language compliance background
+- [`paydirt/README.md`](paydirt/README.md) - browser tool source layout and build process
 
 ## Try It Yourself
 
@@ -61,8 +86,8 @@ paydirt/
 │
 ├── docs/                        compliance and architecture documentation
 │   ├── COMPLIANCE_PRIMER.md     plain-language compliance background
-│   ├── SECURITY_ARCHITECTURE.pdf architecture and security review document
-│   └── LOG_SCRUBBER_GUIDE.pdf   CLI user guide
+│   ├── LOG_SCRUBBER_GUIDE.md    CLI quick-start guide
+│   └── SECURITY_ARCHITECTURE.pdf architecture and security review document
 │
 ├── cli/                         Python CLI tests
 │   ├── README.md

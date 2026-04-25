@@ -311,5 +311,5 @@ That's the whole game. The scrubber doesn't make compliance go away, but it make
 
 ---
 
-*Machine Data Insights Inc. | machinedatainsights.com*
-*Version 1.0 - April 23, 2026*
+*Machine Data Insights Inc. | machinedatainsights.com*  
+*Version 1.0 - April 24, 2026*
