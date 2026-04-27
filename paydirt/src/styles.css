@@ -328,6 +328,128 @@ button {
     justify-content: flex-end;
 }
 
+/* ---- SPL examples disclosure --------------------------------------------- */
+
+.spl-details {
+    margin-top: var(--space-2);
+}
+
+.spl-details summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 0.88rem;
+    padding: var(--space-2) 0;
+    user-select: none;
+}
+
+.spl-details summary:hover {
+    color: var(--color-gold);
+}
+
+.spl-body {
+    margin-top: var(--space-2);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+}
+
+.spl-intro {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3) 0;
+    line-height: 1.5;
+}
+
+.spl-intro em {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.78rem;
+    background-color: var(--color-gold-bg);
+    color: #78350F;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.spl-intro strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.spl-block {
+    margin-bottom: var(--space-3);
+}
+
+.spl-block:last-child {
+    margin-bottom: 0;
+}
+
+.spl-block-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: 4px;
+}
+
+.spl-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.spl-meta {
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.spl-copy-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.spl-copy-btn:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+}
+
+.spl-copy-btn.copied {
+    border-color: #16a34a;
+    color: #16a34a;
+}
+
+.spl-code {
+    margin: 0;
+    background-color: #1F2328;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    overflow-x: auto;
+}
+
+.spl-code code {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1.55;
+    color: #e5e7eb;
+    white-space: pre;
+}
+
+.spl-code em {
+    color: #FCD34D;
+    font-style: italic;
+    font-weight: 600;
+}
+
 /* ---- Config section ------------------------------------------------------ */
 
 .config-status {

@@ -94,6 +94,40 @@
                 </div>
             </div>
         </details>
+
+        <details class="spl-details">
+            <summary>Splunk SPL for exporting samples</summary>
+            <div class="spl-body">
+                <p class="spl-intro">
+                    Run these searches in Splunk Web, then click <strong>Export &rarr; CSV</strong>
+                    to save the results. Drop the saved files onto Paydirt above. Replace
+                    <em>index</em> and <em>sourcetype</em> with your own values.
+                </p>
+
+                <div class="spl-block">
+                    <div class="spl-block-header">
+                        <span class="spl-label">Field-value samples</span>
+                        <span class="spl-meta">last 7 days</span>
+                        <button type="button" class="spl-copy-btn" data-spl="fieldsummary" title="Copy SPL to clipboard">Copy</button>
+                    </div>
+                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
+| fieldsummary maxvals=5
+| search field!="_*" AND field!="date_*" AND field!="linecount"
+  AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
+  AND field!="splunk_server_group"</code></pre>
+                </div>
+
+                <div class="spl-block">
+                    <div class="spl-block-header">
+                        <span class="spl-label">Log samples</span>
+                        <span class="spl-meta">last 1 day</span>
+                        <button type="button" class="spl-copy-btn" data-spl="samples" title="Copy SPL to clipboard">Copy</button>
+                    </div>
+                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-1d@d
+| dedup punct | head 20</code></pre>
+                </div>
+            </div>
+        </details>
     </section>
 
     <!-- Config section: shows loaded config status, allows upload -->

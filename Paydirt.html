@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Paydirt - Log Scrubber
-  Built: 2026-04-26 10:57:05
+  Built: 2026-04-27 08:38:20
   Machine Data Insights - machinedatainsights.com
 
   This file runs entirely in your browser.
@@ -366,6 +366,128 @@ button {
     margin-top: var(--space-2);
     display: flex;
     justify-content: flex-end;
+}
+
+/* ---- SPL examples disclosure --------------------------------------------- */
+
+.spl-details {
+    margin-top: var(--space-2);
+}
+
+.spl-details summary {
+    cursor: pointer;
+    color: var(--color-text-muted);
+    font-size: 0.88rem;
+    padding: var(--space-2) 0;
+    user-select: none;
+}
+
+.spl-details summary:hover {
+    color: var(--color-gold);
+}
+
+.spl-body {
+    margin-top: var(--space-2);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+}
+
+.spl-intro {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3) 0;
+    line-height: 1.5;
+}
+
+.spl-intro em {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.78rem;
+    background-color: var(--color-gold-bg);
+    color: #78350F;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.spl-intro strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.spl-block {
+    margin-bottom: var(--space-3);
+}
+
+.spl-block:last-child {
+    margin-bottom: 0;
+}
+
+.spl-block-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: 4px;
+}
+
+.spl-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.spl-meta {
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.spl-copy-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.spl-copy-btn:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+}
+
+.spl-copy-btn.copied {
+    border-color: #16a34a;
+    color: #16a34a;
+}
+
+.spl-code {
+    margin: 0;
+    background-color: #1F2328;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    overflow-x: auto;
+}
+
+.spl-code code {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1.55;
+    color: #e5e7eb;
+    white-space: pre;
+}
+
+.spl-code em {
+    color: #FCD34D;
+    font-style: italic;
+    font-weight: 600;
 }
 
 /* ---- Config section ------------------------------------------------------ */
@@ -1098,6 +1220,40 @@ button {
                 <textarea id="paste-input" rows="6" placeholder="Paste log events or a Splunk export here..." spellcheck="false"></textarea>
                 <div class="paste-actions">
                     <button type="button" class="secondary-button" id="paste-scrub-btn">Scrub pasted text</button>
+                </div>
+            </div>
+        </details>
+
+        <details class="spl-details">
+            <summary>Splunk SPL for exporting samples</summary>
+            <div class="spl-body">
+                <p class="spl-intro">
+                    Run these searches in Splunk Web, then click <strong>Export &rarr; CSV</strong>
+                    to save the results. Drop the saved files onto Paydirt above. Replace
+                    <em>index</em> and <em>sourcetype</em> with your own values.
+                </p>
+
+                <div class="spl-block">
+                    <div class="spl-block-header">
+                        <span class="spl-label">Field-value samples</span>
+                        <span class="spl-meta">last 7 days</span>
+                        <button type="button" class="spl-copy-btn" data-spl="fieldsummary" title="Copy SPL to clipboard">Copy</button>
+                    </div>
+                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
+| fieldsummary maxvals=5
+| search field!="_*" AND field!="date_*" AND field!="linecount"
+  AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
+  AND field!="splunk_server_group"</code></pre>
+                </div>
+
+                <div class="spl-block">
+                    <div class="spl-block-header">
+                        <span class="spl-label">Log samples</span>
+                        <span class="spl-meta">last 1 day</span>
+                        <button type="button" class="spl-copy-btn" data-spl="samples" title="Copy SPL to clipboard">Copy</button>
+                    </div>
+                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-1d@d
+| dedup punct | head 20</code></pre>
                 </div>
             </div>
         </details>
@@ -2359,6 +2515,29 @@ if (typeof module !== 'undefined' && module.exports) {
             }
         });
 
+        // SPL copy-to-clipboard buttons. Each .spl-copy-btn sits next to a
+        // <pre><code> block; clicking copies that block's text content to the
+        // clipboard. Clipboard API isn't available on file:// origins in some
+        // browsers, so we have a textarea-based fallback.
+        document.querySelectorAll('.spl-copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const block = btn.closest('.spl-block');
+                if (!block) return;
+                const codeEl = block.querySelector('code');
+                if (!codeEl) return;
+                const text = codeEl.textContent;
+                copyTextToClipboard(text).then(ok => {
+                    const original = btn.textContent;
+                    btn.textContent = ok ? 'Copied' : 'Copy failed';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = original;
+                        btn.classList.remove('copied');
+                    }, 1500);
+                });
+            });
+        });
+
         // Results
         dom.clearResultsBtn.addEventListener('click', () => {
             resultCards.forEach(card => card.element.remove());
@@ -3327,6 +3506,41 @@ if (typeof module !== 'undefined' && module.exports) {
         document.body.removeChild(a);
         // Revoke URL after a short delay so the download has time to start
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function copyTextToClipboard(text) {
+        // Modern Clipboard API path. Returns a Promise that resolves to true
+        // on success, false on failure. The Clipboard API requires a secure
+        // context, which file:// is treated as in modern browsers; if it's
+        // not available for any reason, fall back to the legacy textarea
+        // selection approach.
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text)
+                .then(() => true)
+                .catch(() => copyTextToClipboardFallback(text));
+        }
+        return Promise.resolve(copyTextToClipboardFallback(text));
+    }
+
+    function copyTextToClipboardFallback(text) {
+        // Legacy fallback: temporary off-screen textarea + execCommand.
+        // Works in older browsers and on origins where Clipboard API is
+        // restricted. Returns boolean (synchronous).
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (_) {
+            ok = false;
+        }
+        document.body.removeChild(ta);
+        return ok;
     }
 
     // ----------------------------------------------------------------------

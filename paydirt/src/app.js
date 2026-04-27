@@ -295,6 +295,29 @@
             }
         });
 
+        // SPL copy-to-clipboard buttons. Each .spl-copy-btn sits next to a
+        // <pre><code> block; clicking copies that block's text content to the
+        // clipboard. Clipboard API isn't available on file:// origins in some
+        // browsers, so we have a textarea-based fallback.
+        document.querySelectorAll('.spl-copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const block = btn.closest('.spl-block');
+                if (!block) return;
+                const codeEl = block.querySelector('code');
+                if (!codeEl) return;
+                const text = codeEl.textContent;
+                copyTextToClipboard(text).then(ok => {
+                    const original = btn.textContent;
+                    btn.textContent = ok ? 'Copied' : 'Copy failed';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = original;
+                        btn.classList.remove('copied');
+                    }, 1500);
+                });
+            });
+        });
+
         // Results
         dom.clearResultsBtn.addEventListener('click', () => {
             resultCards.forEach(card => card.element.remove());
@@ -1263,6 +1286,41 @@
         document.body.removeChild(a);
         // Revoke URL after a short delay so the download has time to start
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function copyTextToClipboard(text) {
+        // Modern Clipboard API path. Returns a Promise that resolves to true
+        // on success, false on failure. The Clipboard API requires a secure
+        // context, which file:// is treated as in modern browsers; if it's
+        // not available for any reason, fall back to the legacy textarea
+        // selection approach.
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text)
+                .then(() => true)
+                .catch(() => copyTextToClipboardFallback(text));
+        }
+        return Promise.resolve(copyTextToClipboardFallback(text));
+    }
+
+    function copyTextToClipboardFallback(text) {
+        // Legacy fallback: temporary off-screen textarea + execCommand.
+        // Works in older browsers and on origins where Clipboard API is
+        // restricted. Returns boolean (synchronous).
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (_) {
+            ok = false;
+        }
+        document.body.removeChild(ta);
+        return ok;
     }
 
     // ----------------------------------------------------------------------
