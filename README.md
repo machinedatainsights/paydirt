@@ -5,10 +5,6 @@ sensitive data from Splunk log exports. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. By Machine Data Insights.
 
-![Paydirt comparison view: original log on the left, scrubbed output on the right, with per-field highlights showing exactly what was redacted](docs/images/paydirt-screenshot.png)
-
-*Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*  
-
 ## Download
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
@@ -77,6 +73,29 @@ describing what it demonstrates. Reviewers evaluating the tool for compliance
 purposes can inspect each section's expected behavior, run the scrubber, and
 visually confirm that every category of sensitive data gets correctly
 redacted (and that negative test cases remain untouched).
+
+## Working With Your Own Splunk Data
+
+To pull data from your own Splunk environment for scrubbing, Paydirt
+includes ready-to-run SPL examples directly in the UI. Click
+**Splunk SPL for exporting samples** in the Input section to expand a panel
+with two searches:
+
+- **Field-value samples** (last 7 days) — uses `fieldsummary` to extract
+  the distinct values present in each field across a sourcetype, with the
+  housekeeping fields filtered out. This is the right input for understanding
+  the shape of your data and building CIM normalization rules.
+- **Log samples** (last 1 day) — uses `dedup punct | head 20` to grab a
+  representative set of distinct event patterns. This is the right input
+  for working with full event text, including any embedded JSON.
+
+Each block has a **Copy** button to drop the SPL into your clipboard with
+one click. Substitute your own `{index}` and `{sourcetype}` values, run the
+search in Splunk Web, click **Export → CSV**, and drop the saved file onto
+Paydirt to scrub it.
+
+The same searches work with `log_scrubber.py` — export from Splunk, then
+run `python log_scrubber.py your_export.csv`.
 
 ## Repository Layout
 
