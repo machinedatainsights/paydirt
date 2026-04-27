@@ -110,7 +110,7 @@
                         <span class="spl-meta">last 7 days</span>
                         <button type="button" class="spl-copy-btn" data-spl="fieldsummary" title="Copy SPL to clipboard">Copy</button>
                     </div>
-                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
+                    <pre class="spl-code"><code>index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
 | fieldsummary maxvals=5
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
@@ -123,7 +123,7 @@
                         <span class="spl-meta">last 1 day</span>
                         <button type="button" class="spl-copy-btn" data-spl="samples" title="Copy SPL to clipboard">Copy</button>
                     </div>
-                    <pre class="spl-code"><code>search index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-1d@d
+                    <pre class="spl-code"><code>index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-1d@d
 | dedup punct | head 20</code></pre>
                 </div>
             </div>

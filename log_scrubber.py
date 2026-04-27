@@ -46,14 +46,14 @@ Usage (as a library):
     clean = scrub_text(raw, text_rules, json_rules)
 
 Splunk SPL for exporting field values (run in Splunk Web → export as CSV):
-    search index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
+    index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
     | fieldsummary maxvals=5
     | search field!="_*" AND field!="date_*" AND field!="linecount"
       AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
       AND field!="splunk_server_group"
 
 Splunk SPL for exporting log samples (run in Splunk Web → export as CSV):
-    search index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
+    index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
     | dedup punct | head 20
 
 Version: 1.2.0
@@ -1263,14 +1263,14 @@ Examples:
   %(prog)s events.csv --no-cui                        (disable CUI redaction)
 
 Export SPL for fieldsummary (Splunk Web -> Export -> CSV):
-  search index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
+  index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
   | fieldsummary maxvals=5
   | search field!="_*" AND field!="date_*" AND field!="linecount"
     AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
     AND field!="splunk_server_group"
 
 Export SPL for log samples (Splunk Web -> Export -> CSV):
-  search index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
+  index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
   | dedup punct | head 20
         """,
     )
