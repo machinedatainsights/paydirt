@@ -19,7 +19,7 @@ names of Machine Data Insights Inc.
 
 The canonical version of these tools is maintained at:
 
-    https://machinedatainsights.com
+    https://github.com/machinedatainsights/paydirt
 
 We welcome bug reports and feature suggestions via email. We do not accept
 pull requests on the public repository - this is a deliberate policy to keep
@@ -32,8 +32,9 @@ into the canonical version when appropriate.
 Trademark notice
 ================================================================================
 
-"Paydirt", "Machine Data Insights", and "There's Gold In That Data!" are
-trademarks of Machine Data Insights Inc. The Apache License does not grant
-permission to use these marks. Use of the marks for purposes of describing
-the origin of the Work and reproducing the content of this NOTICE file is
-permitted; other use requires written permission.
+"Paydirt", "Machine Data Insights", "There's Gold In That Data!", and
+"Turning Data Into Gold" are trademarks of Machine Data Insights Inc.
+The Apache License does not grant permission to use these marks. Use of
+the marks for purposes of describing the origin of the Work and reproducing
+the content of this NOTICE file is permitted; other use requires written
+permission.
