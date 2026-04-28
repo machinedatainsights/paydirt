@@ -56,6 +56,7 @@ no dependencies at all for the browser tool (pure HTML/CSS/JS, runs offline).
 - This README is the canonical project documentation
 - [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md) - CLI quick-start, condensed for users who just want to scrub their first file
 - [`docs/COMPLIANCE_PRIMER.md`](docs/COMPLIANCE_PRIMER.md) - plain-language compliance background
+- [`docs/SECURITY_ARCHITECTURE.pdf`](docs/SECURITY_ARCHITECTURE.pdf) - architecture and security review for compliance reviewers, covering data flow, trust boundaries, threat model, and code provenance
 - [`paydirt/README.md`](paydirt/README.md) - browser tool source layout and build process
 
 ## Try It Yourself
