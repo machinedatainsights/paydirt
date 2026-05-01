@@ -1,14 +1,10 @@
-# Paydirt + Log Scrubber
-<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=100>
-
-A self-contained browser tool plus matching Python CLI for scrubbing
+# Paydirt + Log Scrubber 
+<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=75> A self-contained browser tool plus matching Python CLI for scrubbing
 sensitive data from Splunk log exports. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
-CMMC, HIPAA, and GDPR aware. By Machine Data Insights.
+CMMC, HIPAA, and GDPR aware. By Machine Data Insights. "There's Gold in That Data!"®  
 
-| There's Gold in That Data!®
-| :---: |
-| <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=625> |
+<img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
 
 *Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*
 
@@ -565,6 +561,6 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ---
 
-**Machine Data Insights Inc.** *"There's Gold In That Data!"™* | [machinedatainsights.com](https://machinedatainsights.com)  
+**Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
   
 *Version 1.2.0 - April 24, 2026*
