@@ -1,7 +1,8 @@
 # Paydirt + Log Scrubber 
-<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=75> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk log exports so they can be mined for value. Drop a file, get a sanitized
+<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=70> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk log exports so they can be mined for value. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
-CMMC, HIPAA, and GDPR aware. By Machine Data Insights. *There's Gold in That Data!®*  
+CMMC, HIPAA, and GDPR aware. Environment customizable.  
+By Machine Data Insights. *There's Gold in That Data!®*  
 
 <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
 
