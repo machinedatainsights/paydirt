@@ -8,6 +8,22 @@ By Machine Data Insights. *There's Gold in That Data!®*
 
 *Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*
 
+## What Gets Redacted
+
+Out of the box, with zero configuration, Paydirt finds and replaces:
+
+**Network & identity** — IPv4/IPv6 addresses, AWS `ip-` hostnames, email addresses, FQDN hostnames, UNC paths (`\\server\share`), domain usernames (`CORP\jsmith`), MAC addresses
+
+**Credentials & tokens** — PEM private key blocks, AWS access keys (`AKIA...`, `ASIA...`), GitHub PATs (`ghp_`, `gho_`, ...), Slack tokens (`xoxb-`, `xoxp-`, ...), Stripe keys (`sk_live_`, `sk_test_`), JWTs, Google API keys (`AIza...`), HTTP `Authorization` header values, URL query-string credentials (`?password=`, `&api_key=`, ...)
+
+**PII / PHI** — SSNs (valid issuance ranges only), credit card numbers (Luhn-validated), NPIs (validated per 45 CFR 162.406), formatted US phone numbers, Windows user SIDs (well-known system SIDs like `S-1-5-18` preserved)
+
+**CUI markings (CMMC / NIST SP 800-171)** — CUI banner markings (`CUI`, `CUI//SP-PRVCY`, `CUI//SP-PROPIN`, `CUI//SP-EXPT`, `CUI//SP-LEI`, `CUI//SP-CTI`, `CONTROLLED//...`), portion markings (`(CUI)`, `(U//FOUO)`, `(U//SBU)`, `(U//LES)`, `(C)`, `(U)`), legacy markings (FOUO, SBU, LES, OUO, LIMDIS, NOFORN, FEDCON, ORCON), and CUI-adjacent flags (ITAR, EAR99, ECCN, DD 254, FCI) — full-value redaction with metadata-only placeholder
+
+**Plus whatever else you tell it to** — text substitution, JSON field targeting at any nesting depth (including dotted paths like `userIdentity.arn`), AWS/Azure/GCP tag structures, and random replacement pools via a simple CSV config
+
+Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order IDs, tracking numbers, timestamps) aren't mistaken for SSNs, credit cards, or NPIs. See [Built-in Scrubbing](#built-in-scrubbing-always-active) below for exact patterns and replacement values.
+
 ## Download
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
