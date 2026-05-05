@@ -4,6 +4,8 @@ version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 By Machine Data Insights. *There's Gold in That Data!®*  
 
+**[⬇ Download Paydirt v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#download)
+
 <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
 
 *Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*
@@ -12,15 +14,15 @@ By Machine Data Insights. *There's Gold in That Data!®*
 
 Out of the box, with zero configuration, Paydirt finds and replaces:
 
-**Network & identity** — IPv4/IPv6 addresses, AWS `ip-` hostnames, email addresses, FQDN hostnames, UNC paths (`\\server\share`), domain usernames (`CORP\jsmith`), MAC addresses
+**Network & identity** - IPv4/IPv6 addresses, AWS `ip-` hostnames, email addresses, FQDN hostnames, UNC paths (`\\server\share`), domain usernames (`CORP\jsmith`), MAC addresses
 
-**Credentials & tokens** — PEM private key blocks, AWS access keys (`AKIA...`, `ASIA...`), GitHub PATs (`ghp_`, `gho_`, ...), Slack tokens (`xoxb-`, `xoxp-`, ...), Stripe keys (`sk_live_`, `sk_test_`), JWTs, Google API keys (`AIza...`), HTTP `Authorization` header values, URL query-string credentials (`?password=`, `&api_key=`, ...)
+**Credentials & tokens** - PEM private key blocks, AWS access keys (`AKIA...`, `ASIA...`), GitHub PATs (`ghp_`, `gho_`, ...), Slack tokens (`xoxb-`, `xoxp-`, ...), Stripe keys (`sk_live_`, `sk_test_`), JWTs, Google API keys (`AIza...`), HTTP `Authorization` header values, URL query-string credentials (`?password=`, `&api_key=`, ...)
 
-**PII / PHI** — SSNs (valid issuance ranges only), credit card numbers (Luhn-validated), NPIs (validated per 45 CFR 162.406), formatted US phone numbers, Windows user SIDs (well-known system SIDs like `S-1-5-18` preserved)
+**PII / PHI** - SSNs (valid issuance ranges only), credit card numbers (Luhn-validated), NPIs (validated per 45 CFR 162.406), formatted US phone numbers, Windows user SIDs (well-known system SIDs like `S-1-5-18` preserved)
 
-**CUI markings (CMMC / NIST SP 800-171)** — CUI banner markings (`CUI`, `CUI//SP-PRVCY`, `CUI//SP-PROPIN`, `CUI//SP-EXPT`, `CUI//SP-LEI`, `CUI//SP-CTI`, `CONTROLLED//...`), portion markings (`(CUI)`, `(U//FOUO)`, `(U//SBU)`, `(U//LES)`, `(C)`, `(U)`), legacy markings (FOUO, SBU, LES, OUO, LIMDIS, NOFORN, FEDCON, ORCON), and CUI-adjacent flags (ITAR, EAR99, ECCN, DD 254, FCI) — full-value redaction with metadata-only placeholder
+**CUI markings (CMMC / NIST SP 800-171)** - CUI banner markings (`CUI`, `CUI//SP-PRVCY`, `CUI//SP-PROPIN`, `CUI//SP-EXPT`, `CUI//SP-LEI`, `CUI//SP-CTI`, `CONTROLLED//...`), portion markings (`(CUI)`, `(U//FOUO)`, `(U//SBU)`, `(U//LES)`, `(C)`, `(U)`), legacy markings (FOUO, SBU, LES, OUO, LIMDIS, NOFORN, FEDCON, ORCON), and CUI-adjacent flags (ITAR, EAR99, ECCN, DD 254, FCI) - full-value redaction with metadata-only placeholder
 
-**Plus whatever else you tell it to** — text substitution, JSON field targeting at any nesting depth (including dotted paths like `userIdentity.arn`), AWS/Azure/GCP tag structures, and random replacement pools via a simple CSV config
+**Plus whatever else you tell it to** - text substitution, JSON field targeting at any nesting depth (including dotted paths like `userIdentity.arn`), AWS/Azure/GCP tag structures, and random replacement pools via a simple CSV config
 
 Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order IDs, tracking numbers, timestamps) aren't mistaken for SSNs, credit cards, or NPIs. See [Built-in Scrubbing](#built-in-scrubbing-always-active) below for exact patterns and replacement values.
 
@@ -28,19 +30,19 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
-**Browser tool and config template:**
+**The tool itself:**
+- [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - browser tool. Save, double-click to open, drop log files on it. No install required.
+- [log_scrubber.py](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubber.py) - Python CLI. Requires Python 3.9+. No other dependencies.
 
-- [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - the browser tool. Save the file, double-click to open in your browser. No install required.
-- [log_scrubbing_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubbing_config.csv) - the default configuration file (optional - both tools have built-in defaults).
+**Configuration:**
+- [log_scrubbing_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubbing_config.csv) - default config used by both tools (optional - both have built-in defaults).
 
-**Demo files** - click "Load custom config", load `paydirt_demo_config.csv`, then drop `paydirt_demo.log` onto the "Drop files to scrub" panel. Click "Comparison" to view all the redactions, then "Summary" to see an inventory of what was redacted by category.
+**Documentation:**
+- [LOG_SCRUBBER_GUIDE.pdf](https://github.com/machinedatainsights/paydirt/releases/latest/download/LOG_SCRUBBER_GUIDE.pdf) - CLI quick-start guide, printable.
 
-- [paydirt_demo.log](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo.log) - 25 sections covering every scrubbing category, with negative test cases that demonstrate what the scrubber correctly leaves alone.
-- [paydirt_demo_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo_config.csv) - companion config that targets Section 25 of the demo file (custom rules).
-
-**Python CLI for automation:**
-
-- [log_scrubber.py](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubber.py) - the Python CLI. Requires Python 3.9 or later. No other dependencies.
+**Demo files** (for trying Paydirt or evaluating it for compliance use):
+- [paydirt_demo.log](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo.log) - example log file exercising every scrubbing category.
+- [paydirt_demo_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo_config.csv) - companion config that lights up the custom-rule section of the demo.
 
 ## What It Does
 
@@ -101,24 +103,24 @@ includes ready-to-run SPL examples directly in the UI. Click
 **Splunk SPL for exporting samples** in the Input section to expand a panel
 with three searches:
 
-- **Discover sourcetypes** (last 30 days) — uses `tstats` against the
+- **Discover sourcetypes** (last 30 days) - uses `tstats` against the
   metadata index to list sourcetypes with their indexes, sources, and event
   counts. The example filters on `index=_internal AND sourcetype=splunk_web*`
-  as a safe starting point — broaden the filter to match your environment,
+  as a safe starting point - broaden the filter to match your environment,
   but keep the filter specific in large deployments or the search can run
   for a very long time. The 30-day window also avoids surfacing retired
   sourcetypes. Run this first to pick a sourcetype for the other two
   searches; the export also doubles as the input for the Data Refinery
   *Sourcetype CSV* entry.
-- **Field-value samples** (last 7 days) — uses `fieldsummary` to extract
+- **Field-value samples** (last 7 days) - uses `fieldsummary` to extract
   the distinct values present in each field across a sourcetype, with the
   housekeeping fields filtered out. This is the right input for understanding
   the shape of your data and building CIM normalization rules.
-- **Log samples** (last 1 day) — uses `dedup punct | head 20` to grab a
+- **Log samples** (last 1 day) - uses `dedup punct | head 20` to grab a
   representative set of distinct event patterns. This is the right input
   for working with full event text, including any embedded JSON. For a
   more complete picture you can drop the `| head 20` cap (keeping the
-  `dedup punct`) so every distinct pattern is captured — useful when rare
+  `dedup punct`) so every distinct pattern is captured - useful when rare
   events carry important data that the 20-event cap might exclude, as
   long as the result set stays a manageable size.
 
@@ -128,7 +130,7 @@ search in Splunk Web, click **Export → CSV**, and drop the saved file onto
 Paydirt to scrub it.
 
 > **Don't scrub the discovery export.** Sourcetype, index, and source names
-> are structural metadata, not log content — they need to stay verbatim so
+> are structural metadata, not log content - they need to stay verbatim so
 > downstream consumers can use them. Index names, for example, often feed
 > CIM macros where any redaction will break the macro, and sourcetype names
 > have to match exactly when used in subsequent searches. Only scrub the
@@ -138,7 +140,7 @@ Paydirt to scrub it.
 > field-value and log-sample exports, by contrast, *should* be scrubbed
 > before sharing.
 
-The field-value and log-sample searches work with `log_scrubber.py` too —
+The field-value and log-sample searches work with `log_scrubber.py` too -
 export from Splunk, then run `python log_scrubber.py your_export.csv`.
 
 ## Repository Layout
@@ -238,7 +240,7 @@ first against your Splunk metadata index:
 
 Adjust the `index=...` and `sourcetype=...` filters on the first line for
 your own environment. The example above (`index=_internal AND sourcetype=splunk_web*`)
-is a safe starting point — keep the filter specific in large deployments
+is a safe starting point - keep the filter specific in large deployments
 or the search can run for a very long time. The `earliest=-30d` window
 also avoids surfacing sourcetypes that no longer exist.
 
@@ -246,7 +248,7 @@ Click **Export** → choose **CSV** → save the file (e.g., `sourcetypes.csv`).
 
 This lists each matching sourcetype with its indexes, sources, and event
 counts so you can pick a target for the next two searches. **Do not scrub
-this export** — sourcetype and index names need to stay accurate for
+this export** - sourcetype and index names need to stay accurate for
 downstream use (CIM macros, Data Refinery *Sourcetype CSV* entry, etc.).
 Only redact a name by hand if it itself contains sensitive content.
 
@@ -277,7 +279,7 @@ Click **Export** → choose **CSV** → save the file (e.g., `guardduty_samples.
 to capture *every* distinct event pattern. `dedup punct` already
 collapses the result set to one event per unique punctuation shape, so
 the unbounded query usually returns only a few dozen to a few hundred
-rows — completely manageable for most sourcetypes. The 20-event cap can
+rows - completely manageable for most sourcetypes. The 20-event cap can
 silently hide infrequent-but-important patterns (rare error variants,
 privileged-user actions, edge-case payloads), so for small or medium
 sourcetypes the unbounded form is often the better choice. Keep the cap
@@ -288,7 +290,7 @@ Alternatively, you can copy/paste raw events into a plain `.txt` file (one event
 
 ### 4. Scrub the Exports
 
-Skip the discovery export from Step 1 — it should pass through untouched.
+Skip the discovery export from Step 1 - it should pass through untouched.
 Run the scrubber on the field-value and log-sample exports. With
 auto-detection (recommended), you don't need to specify the mode:
 
