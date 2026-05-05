@@ -1241,7 +1241,7 @@ button {
                         <span class="spl-meta">last 30 days</span>
                         <button type="button" class="spl-copy-btn" data-spl="discover" title="Copy SPL to clipboard">Copy</button>
                     </div>
-                    <pre class="spl-code"><code>| tstats count where index=_internal AND sourcetype=splunk_web* earliest=-30d BY sourcetype, index, source
+                    <pre class="spl-code"><code>| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
 | sort -event_count</code></pre>
                 </div>

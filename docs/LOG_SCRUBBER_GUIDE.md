@@ -74,14 +74,14 @@ If you don't already know which index and sourcetype to target, run this
 first against your Splunk metadata index:
 
 ```spl
-| tstats count where index=_internal AND sourcetype=splunk_web* earliest=-30d BY sourcetype, index, source
+| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
 | sort -event_count
 ```
 
-Adjust the `index=...` and `sourcetype=...` filters on the first line for
-your own environment. The example above (`index=_internal AND sourcetype=splunk_web*`)
-is a safe starting point - keep the filter specific in large deployments
+Replace `{sourcetype(s)}` with a specific sourcetype or wildcarded filter
+(e.g., `cisco:asa` or `cisco:*`) and adjust the `index=...` filter for your
+own environment. Keep the sourcetype filter specific in large deployments
 or the search can run for a very long time. The `earliest=-30d` window
 also avoids surfacing sourcetypes that no longer exist.
 
