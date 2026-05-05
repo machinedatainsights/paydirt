@@ -68,7 +68,32 @@ scrubbed events.
 
 ## Step-by-Step Workflow
 
-### 1. Export Field Values from Splunk Web
+### 1. Discover Sourcetypes (optional)
+
+If you don't already know which index and sourcetype to target, run this
+first against your Splunk metadata index:
+
+```spl
+| tstats count where index=_internal AND sourcetype=splunk_web* earliest=-30d BY sourcetype, index, source
+| stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
+| sort -event_count
+```
+
+Adjust the `index=...` and `sourcetype=...` filters on the first line for
+your own environment. The example above (`index=_internal AND sourcetype=splunk_web*`)
+is a safe starting point - keep the filter specific in large deployments
+or the search can run for a very long time. The `earliest=-30d` window
+also avoids surfacing sourcetypes that no longer exist.
+
+Click **Export** -> choose **CSV** -> save the file (e.g., `sourcetypes.csv`).
+
+This lists each matching sourcetype with its indexes, sources, and event
+counts so you can pick a target for the next two searches. **Do not scrub
+this export** - sourcetype and index names need to stay accurate for
+downstream use (CIM macros, Data Refinery *Sourcetype CSV* entry, etc.).
+Only redact a name by hand if it itself contains sensitive content.
+
+### 2. Export Field Values from Splunk Web
 
 Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
@@ -82,7 +107,7 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
 
 Click **Export** -> choose **CSV** -> save the file (e.g., `guardduty_fields.csv`).
 
-### 2. Export Log Samples from Splunk Web
+### 3. Export Log Samples from Splunk Web
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
@@ -91,10 +116,23 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
 
 Click **Export** -> choose **CSV** -> save the file (e.g., `guardduty_samples.csv`).
 
+**Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
+to capture *every* distinct event pattern. `dedup punct` already collapses
+the result set to one event per unique punctuation shape, so the unbounded
+query usually returns only a few dozen to a few hundred rows - completely
+manageable for most sourcetypes. The 20-event cap can silently hide
+infrequent-but-important patterns (rare error variants, privileged-user
+actions, edge-case payloads), so for small or medium sourcetypes the
+unbounded form is often the better choice. Keep the cap for very
+high-cardinality sourcetypes where the unbounded result would be too large.
+
 Alternatively, copy/paste raw events into a plain `.txt` file (one event per
 line). The scrubber auto-detects the format.
 
-### 3. Scrub the Exports
+### 4. Scrub the Exports
+
+Skip the discovery export from Step 1 - it should pass through untouched.
+Run the scrubber on the field-value and log-sample exports:
 
 ```bash
 # Auto-detection (recommended)
@@ -105,7 +143,7 @@ python log_scrubber.py guardduty_samples.csv
 python log_scrubber.py ~/Downloads/*.csv
 ```
 
-### 4. Review and Send
+### 5. Review and Send
 
 Check the `*_scrubbed_*` output files to verify sensitive data was replaced,
 then transmit the scrubbed files to the downstream recipient (LLM pipeline,

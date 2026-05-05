@@ -99,23 +99,47 @@ redacted (and that negative test cases remain untouched).
 To pull data from your own Splunk environment for scrubbing, Paydirt
 includes ready-to-run SPL examples directly in the UI. Click
 **Splunk SPL for exporting samples** in the Input section to expand a panel
-with two searches:
+with three searches:
 
+- **Discover sourcetypes** (last 30 days) — uses `tstats` against the
+  metadata index to list sourcetypes with their indexes, sources, and event
+  counts. The example filters on `index=_internal AND sourcetype=splunk_web*`
+  as a safe starting point — broaden the filter to match your environment,
+  but keep the filter specific in large deployments or the search can run
+  for a very long time. The 30-day window also avoids surfacing retired
+  sourcetypes. Run this first to pick a sourcetype for the other two
+  searches; the export also doubles as the input for the Data Refinery
+  *Sourcetype CSV* entry.
 - **Field-value samples** (last 7 days) — uses `fieldsummary` to extract
   the distinct values present in each field across a sourcetype, with the
   housekeeping fields filtered out. This is the right input for understanding
   the shape of your data and building CIM normalization rules.
 - **Log samples** (last 1 day) — uses `dedup punct | head 20` to grab a
   representative set of distinct event patterns. This is the right input
-  for working with full event text, including any embedded JSON.
+  for working with full event text, including any embedded JSON. For a
+  more complete picture you can drop the `| head 20` cap (keeping the
+  `dedup punct`) so every distinct pattern is captured — useful when rare
+  events carry important data that the 20-event cap might exclude, as
+  long as the result set stays a manageable size.
 
 Each block has a **Copy** button to drop the SPL into your clipboard with
 one click. Substitute your own `{index}` and `{sourcetype}` values, run the
 search in Splunk Web, click **Export → CSV**, and drop the saved file onto
 Paydirt to scrub it.
 
-The same searches work with `log_scrubber.py` — export from Splunk, then
-run `python log_scrubber.py your_export.csv`.
+> **Don't scrub the discovery export.** Sourcetype, index, and source names
+> are structural metadata, not log content — they need to stay verbatim so
+> downstream consumers can use them. Index names, for example, often feed
+> CIM macros where any redaction will break the macro, and sourcetype names
+> have to match exactly when used in subsequent searches. Only scrub the
+> discovery export if a name itself obviously contains sensitive data
+> (e.g., a customer name baked into an index name); otherwise pass it
+> through to the Data Refinery *Sourcetype CSV* entry as-is. The
+> field-value and log-sample exports, by contrast, *should* be scrubbed
+> before sharing.
+
+The field-value and log-sample searches work with `log_scrubber.py` too —
+export from Splunk, then run `python log_scrubber.py your_export.csv`.
 
 ## Repository Layout
 
@@ -201,7 +225,32 @@ Log sample events are scrubbed in place - the output file contains only scrubbed
 
 ## Step-by-Step Workflow
 
-### 1. Export Field Values from Splunk Web
+### 1. Discover Sourcetypes (optional)
+
+If you don't already know which index and sourcetype you want, run this
+first against your Splunk metadata index:
+
+```spl
+| tstats count where index=_internal AND sourcetype=splunk_web* earliest=-30d BY sourcetype, index, source
+| stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
+| sort -event_count
+```
+
+Adjust the `index=...` and `sourcetype=...` filters on the first line for
+your own environment. The example above (`index=_internal AND sourcetype=splunk_web*`)
+is a safe starting point — keep the filter specific in large deployments
+or the search can run for a very long time. The `earliest=-30d` window
+also avoids surfacing sourcetypes that no longer exist.
+
+Click **Export** → choose **CSV** → save the file (e.g., `sourcetypes.csv`).
+
+This lists each matching sourcetype with its indexes, sources, and event
+counts so you can pick a target for the next two searches. **Do not scrub
+this export** — sourcetype and index names need to stay accurate for
+downstream use (CIM macros, Data Refinery *Sourcetype CSV* entry, etc.).
+Only redact a name by hand if it itself contains sensitive content.
+
+### 2. Export Field Values from Splunk Web
 
 Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
@@ -215,7 +264,7 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
 
 Click **Export** → choose **CSV** → save the file (e.g., `guardduty_fields.csv`).
 
-### 2. Export Log Samples from Splunk Web
+### 3. Export Log Samples from Splunk Web
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
@@ -224,11 +273,24 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
 
 Click **Export** → choose **CSV** → save the file (e.g., `guardduty_samples.csv`).
 
+**Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
+to capture *every* distinct event pattern. `dedup punct` already
+collapses the result set to one event per unique punctuation shape, so
+the unbounded query usually returns only a few dozen to a few hundred
+rows — completely manageable for most sourcetypes. The 20-event cap can
+silently hide infrequent-but-important patterns (rare error variants,
+privileged-user actions, edge-case payloads), so for small or medium
+sourcetypes the unbounded form is often the better choice. Keep the cap
+for very high-cardinality sourcetypes where the unbounded result would
+be too large.
+
 Alternatively, you can copy/paste raw events into a plain `.txt` file (one event per line). The scrubber auto-detects the format.
 
-### 3. Scrub the Exports
+### 4. Scrub the Exports
 
-With auto-detection (recommended), you don't need to specify the mode:
+Skip the discovery export from Step 1 — it should pass through untouched.
+Run the scrubber on the field-value and log-sample exports. With
+auto-detection (recommended), you don't need to specify the mode:
 
 ```bash
 # Scrub one file
@@ -245,7 +307,7 @@ python log_scrubber.py fieldsummary guardduty_fields.csv
 python log_scrubber.py samples guardduty_samples.csv
 ```
 
-### 4. Review and Send
+### 5. Review and Send
 
 Check the `*_scrubbed_*` output files to verify sensitive data was replaced, then email the scrubbed files for processing.
 

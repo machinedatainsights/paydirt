@@ -99,9 +99,23 @@
             <div class="spl-body">
                 <p class="spl-intro">
                     Run these searches in Splunk Web, then click <strong>Export &rarr; CSV</strong>
-                    to save the results. Drop the saved files onto Paydirt above. Replace
-                    <em>index</em> and <em>sourcetype</em> with your own values.
+                    to save the results. Drop the saved files onto Paydirt above. Start with
+                    <strong>Discover sourcetypes</strong> to see what's available - adjust the
+                    <em>index</em> and <em>sourcetype</em> filter on the first line for your
+                    environment - then plug a chosen <em>index</em> and <em>sourcetype</em>
+                    into the other two searches.
                 </p>
+
+                <div class="spl-block">
+                    <div class="spl-block-header">
+                        <span class="spl-label">Discover sourcetypes</span>
+                        <span class="spl-meta">last 30 days</span>
+                        <button type="button" class="spl-copy-btn" data-spl="discover" title="Copy SPL to clipboard">Copy</button>
+                    </div>
+                    <pre class="spl-code"><code>| tstats count where index=_internal AND sourcetype=splunk_web* earliest=-30d BY sourcetype, index, source
+| stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
+| sort -event_count</code></pre>
+                </div>
 
                 <div class="spl-block">
                     <div class="spl-block-header">
