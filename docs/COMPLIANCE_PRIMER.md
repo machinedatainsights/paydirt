@@ -311,6 +311,6 @@ That's the whole game. The scrubber doesn't make compliance go away, but it make
 
 ---
 
-**Machine Data Insights Inc.** *"There's Gold In That Data!"™* | [machinedatainsights.com](https://machinedatainsights.com)  
+**Machine Data Insights Inc.** *"There's Gold In That Data!"<sup>®</sup>* | [machinedatainsights.com](https://machinedatainsights.com)  
   
 *Version 1.0 - April 25, 2026*
