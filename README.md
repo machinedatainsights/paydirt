@@ -4,7 +4,7 @@ version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 By Machine Data Insights. *There's Gold in That Data!®*  
 
-**[⬇ Download Paydirt v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#download)
+**[⬇ Download Paydirt v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
 <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
 
@@ -26,7 +26,7 @@ Out of the box, with zero configuration, Paydirt finds and replaces:
 
 Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order IDs, tracking numbers, timestamps) aren't mistaken for SSNs, credit cards, or NPIs. See [Built-in Scrubbing](#built-in-scrubbing-always-active) below for exact patterns and replacement values.
 
-## Download
+## Downloads
 
 **Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
@@ -37,8 +37,10 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 **Configuration:**
 - [log_scrubbing_config.csv](https://github.com/machinedatainsights/paydirt/releases/latest/download/log_scrubbing_config.csv) - default config used by both tools (optional - both have built-in defaults).
 
-**Documentation:**
+**Documentation:** printable references for end users, compliance reviewers, and security teams evaluating Paydirt for regulated environments.
 - [LOG_SCRUBBER_GUIDE.pdf](https://github.com/machinedatainsights/paydirt/releases/latest/download/LOG_SCRUBBER_GUIDE.pdf) - CLI quick-start guide, printable.
+- [COMPLIANCE_PRIMER.pdf](https://github.com/machinedatainsights/paydirt/releases/latest/download/COMPLIANCE_PRIMER.pdf) - plain-language background on the CMMC, HIPAA, and GDPR obligations Paydirt is designed to support.
+- [SECURITY_ARCHITECTURE.pdf](https://github.com/machinedatainsights/paydirt/releases/latest/download/SECURITY_ARCHITECTURE.pdf) - architecture and security review for compliance reviewers, covering data flow, trust boundaries, threat model, and code provenance.
 
 **Demo files** (for trying Paydirt or evaluating it for compliance use):
 - [paydirt_demo.log](https://github.com/machinedatainsights/paydirt/releases/latest/download/paydirt_demo.log) - example log file exercising every scrubbing category.
