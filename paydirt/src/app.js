@@ -123,6 +123,7 @@
         resultsContainer: $('results-container'),
         resultsEmpty: $('results-empty'),
         clearResultsBtn: $('clear-results-btn'),
+        reviewRequiredBanner: $('review-required-banner'),
         resultCardTemplate: $('result-card-template'),
         processingOverlay: $('processing-overlay'),
         processingText: $('processing-text'),
@@ -654,6 +655,7 @@
         const hasAny = dom.resultsContainer.querySelector('.result-card') !== null;
         dom.resultsEmpty.hidden = hasAny;
         dom.clearResultsBtn.hidden = !hasAny;
+        dom.reviewRequiredBanner.hidden = !hasAny;
     }
 
     function buildScrubbedFilename(filename) {

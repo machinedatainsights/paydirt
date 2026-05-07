@@ -315,6 +315,8 @@ python log_scrubber.py samples guardduty_samples.csv
 
 Check the `*_scrubbed_*` output files to verify sensitive data was replaced, then email the scrubbed files for processing.
 
+> ***Read every line before you send.*** *Paydirt redacts what it can recognize by shape (IPs, emails, tokens, SSNs, CUI markings) or by structured field name. It **cannot** detect bare personal names, free-text content, or organization-internal terms that have no distinguishing pattern. Common blind spots: an `assigned_to` / `assignee` / `requester` / `owner` value like `John Smith` sitting in an unstructured `_raw` event, a `comment` / `description` / `notes` field containing customer names or case details, a person-named asset like `JSMITH-LAPTOP`, internal project or customer code names, branch and team names, and stack traces that echo user input. If a sensitive value lives in its own JSON key, CSV column, or fieldsummary field, you can target it with an `@json,<field_name>,<replacement>` rule and re-run - the `@json` shortcut covers all three. If it's buried in narrative text, no automated tool can find it reliably. Your eyes are the control of last resort.*
+
 ## Configuration
 
 ### Config File Location
@@ -585,7 +587,7 @@ Handles three formats (auto-detected):
 
 **Reuse configs across projects.** The config format is plain CSV - if you already have a `log_scrubbing_config.csv` for another project or tool, copy it alongside `log_scrubber.py` and it will just work.
 
-**Review output before sending.** Automated scrubbing handles known patterns, but always spot-check the output for any environment-specific data the rules might have missed.
+**Review output before sending.** Automated scrubbing handles known patterns, but bare personal names, free-text fields, and organization-internal terms have no distinguishing shape and slip through. See the warning in [Step 5 of the workflow](#5-review-and-send) for the full list of common blind spots and how to address structured ones with `@json` rules - and read every row of the output before transmission.
 
 **Large JSON events (GuardDuty, CloudTrail, etc.)** are handled natively - the scrubber parses JSON at any nesting depth and applies `@json` rules recursively, including AWS/Azure/GCP tag structures.
 

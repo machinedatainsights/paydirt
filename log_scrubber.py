@@ -604,6 +604,62 @@ def scrub_fieldsummary_values(raw_values: str, replacement: str) -> str:
 
 
 # ============================================================================
+# Free-text Detection (reviewer signal, not a scrubber)
+# ============================================================================
+#
+# Paydirt detects sensitive values by shape (regex) or by structured field
+# name (@json rules). It cannot detect bare personal names, free-text
+# comments, or organization-internal terms with no distinguishing pattern.
+# These functions identify columns / fields whose values look like
+# multi-word natural-language phrases so the CLI can flag them for the
+# reviewer's attention - they don't change scrubbing output.
+
+_WORD_TOKEN_RE = re.compile(r"[A-Za-z]")
+_FIELDSUMMARY_VALUE_RE = re.compile(r"['\"]value['\"]\s*:\s*['\"]([^'\"]*)['\"]")
+
+
+def looks_like_freetext(value: str) -> bool:
+    """
+    Heuristic: True when a value looks like a multi-word natural-language
+    phrase - a personal name, a comment, a description - rather than an
+    identifier, code, URL, path, or single token.
+
+    Conservative on purpose: false negatives are fine (the reviewer still
+    reads the file), false positives are expensive (every cell flagged
+    means none flagged in practice).
+    """
+    if not value:
+        return False
+    s = value.strip()
+    if len(s) < 5:
+        return False
+    tokens = s.split()
+    if len(tokens) < 2:
+        return False
+    word_tokens = sum(1 for t in tokens if _WORD_TOKEN_RE.search(t))
+    if word_tokens < 2:
+        return False
+    # Skip values that are clearly structured rather than prose.
+    if "://" in s or s.startswith("\\\\"):
+        return False
+    if "=" in tokens[0] and len(tokens[0]) > 1:
+        return False
+    # Skip placeholder strings the scrubber itself produced.
+    if s.startswith("[") and s.endswith("]") and "REDACTED" in s.upper():
+        return False
+    return True
+
+
+def fieldsummary_freetext_count(values_blob: str) -> int:
+    """Count distinct values inside a Splunk fieldsummary 'values' blob
+    that look like multi-word natural-language content."""
+    if not values_blob:
+        return 0
+    return sum(1 for v in _FIELDSUMMARY_VALUE_RE.findall(values_blob)
+               if looks_like_freetext(v))
+
+
+# ============================================================================
 # Core Scrubbing Functions
 # ============================================================================
 
@@ -813,7 +869,7 @@ def scrub_fieldsummary_csv(input_path: str, output_path: str,
     By default, outputs only the scrubbed values (no raw column).
     Use include_raw=True to keep the original raw values column.
     """
-    stats = {"rows": 0, "scrubbed": 0, "skipped": 0}
+    stats = {"rows": 0, "scrubbed": 0, "skipped": 0, "freetext_fields": {}}
 
     # Increase CSV field size limit for large JSON events
     csv.field_size_limit(10 * 1024 * 1024)
@@ -890,6 +946,11 @@ def scrub_fieldsummary_csv(input_path: str, output_path: str,
                 field_name = row.get(field_col, "") if field_col else None
 
                 if raw_values.strip():
+                    ft_count = fieldsummary_freetext_count(raw_values)
+                    if ft_count >= 1 and field_name:
+                        stats["freetext_fields"][field_name] = (
+                            stats["freetext_fields"].get(field_name, 0) + ft_count
+                        )
                     scrubbed = scrub_text(raw_values, text_rules, json_field_rules,
                                           field_name=field_name)
                     row[scrubbed_output_col] = scrubbed
@@ -972,11 +1033,18 @@ def _scrub_samples_csv_format(input_path: str, output_path: str,
       scrubbed: same as events, retained for API compatibility with the
                 previous version of this function
     """
-    stats = {"events": 0, "cells": 0, "scrubbed": 0}
+    stats = {"events": 0, "cells": 0, "scrubbed": 0, "freetext_columns": {}}
 
     with open(input_path, "r", encoding="utf-8", errors="replace") as fin:
         reader = csv.DictReader(fin)
         fieldnames = list(reader.fieldnames) if reader.fieldnames else []
+
+        # Track which columns contain multi-word natural-language values.
+        # _raw is the full event blob - flagging it is just stating the
+        # obvious, so skip it. The signal we care about is *other* columns
+        # (host, user, comment, description, assigned_to, ...) that carry
+        # free-text content the scrubber cannot detect by pattern.
+        freetext_counts = {col: 0 for col in fieldnames if col != "_raw"}
 
         with open(output_path, "w", encoding="utf-8", newline="") as fout:
             writer = csv.DictWriter(fout, fieldnames=fieldnames, extrasaction="ignore")
@@ -988,12 +1056,21 @@ def _scrub_samples_csv_format(input_path: str, output_path: str,
                 for col in fieldnames:
                     value = row.get(col, "")
                     if value and value.strip():
+                        if col != "_raw" and looks_like_freetext(value):
+                            freetext_counts[col] = freetext_counts.get(col, 0) + 1
                         row[col] = scrub_text(value, text_rules, json_field_rules,
                                               field_name=col)
                         stats["cells"] += 1
                 stats["scrubbed"] += 1
                 writer.writerow(row)
 
+    # Keep only columns where free-text appeared in a non-trivial fraction
+    # of rows. The threshold (>=2 rows AND >=10% of rows) filters one-off
+    # cells without losing real free-text columns even on small files.
+    total = stats["events"]
+    floor = max(2, total // 10) if total else 2
+    stats["freetext_columns"] = {c: n for c, n in freetext_counts.items()
+                                  if n >= floor}
     return stats
 
 
@@ -1237,15 +1314,32 @@ def _process_one_file(input_path: str, args, text_rules: list,
             if not args.quiet:
                 print(f"      [OK] Scrubbed {stats['scrubbed']}/{stats['rows']} fields"
                       f" (skipped {stats['skipped']} empty)")
+                _print_freetext_report(stats.get("freetext_fields"), unit="field")
         else:
             stats = scrub_samples_csv(input_path, output_path,
                                       text_rules, json_field_rules)
             if not args.quiet:
                 print(f"      [OK] Scrubbed {stats['scrubbed']}/{stats['events']} events")
+                _print_freetext_report(stats.get("freetext_columns"), unit="column")
     finally:
         scrub_text = original_scrub_text
 
     return 0
+
+
+def _print_freetext_report(flagged: dict, unit: str) -> None:
+    """Print a one-line summary of columns / fields whose values look like
+    free-text content. Reviewers should read these carefully because
+    Paydirt cannot detect bare names or narrative text by pattern."""
+    if not flagged:
+        return
+    items = sorted(flagged.items(), key=lambda x: -x[1])
+    head = items[:8]
+    summary = ", ".join(f"{name} ({n})" for name, n in head)
+    if len(items) > 8:
+        summary += f", +{len(items) - 8} more"
+    label = "Free-text " + ("columns" if unit == "column" else "fields") + " to review"
+    print(f"      [!] {label}: {summary}")
 
 
 def main():
@@ -1375,8 +1469,30 @@ Export SPL for log samples (Splunk Web -> Export -> CSV):
         if rc != 0:
             failures += 1
 
+    if not args.quiet and not args.dry_run:
+        _print_review_banner()
+
     if failures:
         sys.exit(2)
+
+
+def _print_review_banner() -> None:
+    """End-of-run reminder: Paydirt cannot detect bare personal names,
+    free-text content, or org-internal terms. Manual review of the
+    scrubbed output is a residual control requirement, not optional."""
+    bar = "=" * 72
+    msg = (
+        "\n" + bar + "\n"
+        "  REVIEW REQUIRED before transmission. Paydirt cannot detect bare\n"
+        "  personal names, free-text content, or organization-internal terms\n"
+        "  with no distinguishing pattern. Common blind spots: assigned_to /\n"
+        "  assignee / requester values, comment / description / notes fields,\n"
+        "  person-named assets, internal project or customer code names,\n"
+        "  branch and team names, stack traces echoing user input.\n"
+        "  Read every line of the scrubbed output before sending.\n"
+        + bar
+    )
+    print(msg, file=sys.stderr)
 
 
 if __name__ == "__main__":

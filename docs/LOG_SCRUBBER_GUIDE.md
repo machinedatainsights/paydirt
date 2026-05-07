@@ -149,9 +149,20 @@ Check the `*_scrubbed_*` output files to verify sensitive data was replaced,
 then transmit the scrubbed files to the downstream recipient (LLM pipeline,
 email, ticket, etc.).
 
-**Always spot-check the output before sending.** Automated scrubbing handles
-known patterns reliably, but environment-specific identifiers (internal
-hostnames, project codenames, custom IDs) need explicit config rules.
+> ***Read every line before you send.*** *The scrubber redacts what it can
+> recognize by shape (IPs, emails, tokens, SSNs, CUI markings) or by
+> structured field name. It **cannot** detect bare personal names, free-text
+> content, or organization-internal terms that have no distinguishing
+> pattern. Common blind spots: an `assigned_to` / `assignee` / `requester` /
+> `owner` value like `John Smith` sitting in an unstructured `_raw` event,
+> a `comment` / `description` / `notes` field containing customer names or
+> case details, a person-named asset like `JSMITH-LAPTOP`, internal project
+> or customer code names, branch and team names, and stack traces that echo
+> user input. If a sensitive value lives in its own JSON key, CSV column,
+> or fieldsummary field, you can target it with an
+> `@json,<field_name>,<replacement>` rule and re-run - the `@json` shortcut
+> covers all three. If it's buried in narrative text, no automated tool
+> can find it reliably. Your eyes are the control of last resort.*
 
 ## Configuration
 

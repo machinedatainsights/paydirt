@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Paydirt - Log Scrubber
-  Built: 2026-05-05 06:56:17
+  Built: 2026-05-07 15:35:00
   Machine Data Insights - machinedatainsights.com
 
   This file runs entirely in your browser.
@@ -1014,6 +1014,55 @@ button {
     border-top: 1px solid var(--color-border);
 }
 
+/* Review-required banner: persistent reminder shown above result cards.
+   Paydirt cannot detect bare personal names, free-text content, or
+   organization-internal terms by pattern - reviewers must read every
+   row before transmission. Intentionally non-dismissable. */
+
+.review-required-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    background-color: var(--color-gold-bg);
+    color: var(--color-token-accent);
+    border: 1px solid var(--color-gold);
+    border-left-width: 4px;
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.review-required-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: var(--color-gold);
+}
+
+.review-required-text strong {
+    color: var(--color-text);
+}
+
+.review-required-text em {
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    background-color: rgba(184, 134, 11, 0.1);
+    padding: 0 0.2em;
+    border-radius: 3px;
+}
+
+.review-required-text code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background-color: rgba(184, 134, 11, 0.12);
+    padding: 0 0.3em;
+    border-radius: 3px;
+}
+
 /* Error state */
 
 .result-card.has-error .result-card-header {
@@ -1305,6 +1354,23 @@ button {
         <div class="results-header">
             <h2 id="results-heading" class="section-heading">Results</h2>
             <button type="button" class="link-button" id="clear-results-btn" hidden>Clear all</button>
+        </div>
+        <div class="review-required-banner" id="review-required-banner" role="note" hidden>
+            <svg class="review-required-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 1.5 L15 14 L1 14 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                <path d="M8 6 L8 10 M8 11.5 L8 12.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <div class="review-required-text">
+                <strong>Review required before sending.</strong>
+                Paydirt cannot detect bare personal names, free-text content, or
+                organization-internal terms with no distinguishing pattern.
+                Common blind spots: <em>assigned_to</em> / <em>assignee</em> / <em>requester</em>
+                values, <em>comment</em> / <em>description</em> / <em>notes</em> fields,
+                person-named assets, internal project or customer code names, branch and
+                team names, and stack traces echoing user input. For structured fields,
+                add an <code>@json,&lt;field_name&gt;,&lt;replacement&gt;</code> rule to
+                your config and re-run; for narrative text, manual review is the only control.
+            </div>
         </div>
         <div id="results-container" class="results-container">
             <div class="results-empty" id="results-empty">
@@ -2356,6 +2422,7 @@ if (typeof module !== 'undefined' && module.exports) {
         resultsContainer: $('results-container'),
         resultsEmpty: $('results-empty'),
         clearResultsBtn: $('clear-results-btn'),
+        reviewRequiredBanner: $('review-required-banner'),
         resultCardTemplate: $('result-card-template'),
         processingOverlay: $('processing-overlay'),
         processingText: $('processing-text'),
@@ -2887,6 +2954,7 @@ if (typeof module !== 'undefined' && module.exports) {
         const hasAny = dom.resultsContainer.querySelector('.result-card') !== null;
         dom.resultsEmpty.hidden = hasAny;
         dom.clearResultsBtn.hidden = !hasAny;
+        dom.reviewRequiredBanner.hidden = !hasAny;
     }
 
     function buildScrubbedFilename(filename) {
