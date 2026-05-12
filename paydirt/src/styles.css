@@ -184,6 +184,16 @@ button {
     border: 1px solid var(--color-border);
 }
 
+.build-pill {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    background-color: var(--color-surface-alt);
+    padding: 2px 8px;
+    border-radius: 100px;
+    border: 1px solid var(--color-border);
+}
+
 .offline-pill {
     display: inline-flex;
     align-items: center;

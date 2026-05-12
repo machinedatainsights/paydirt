@@ -25,6 +25,24 @@ SCRUBBER_JS = SRC / 'scrubber.js'
 APP_JS = SRC / 'app.js'
 DEFAULT_CONFIG = REPO_ROOT / 'log_scrubbing_config.csv'
 OUTPUT = REPO_ROOT / 'Paydirt.html'
+BUILD_STATE = Path(__file__).parent / '.last_build'
+
+
+def compute_build_number(now: datetime) -> str:
+    """Return a yyyymmddxx build number, incrementing xx for same-day rebuilds.
+
+    State lives in BUILD_STATE (10-char string). Unparseable/missing state
+    falls back to xx=01 for today.
+    """
+    today = now.strftime('%Y%m%d')
+    counter = 1
+    if BUILD_STATE.exists():
+        prev = BUILD_STATE.read_text(encoding='utf-8').strip()
+        if len(prev) >= 10 and prev[:8] == today and prev[8:].isdigit():
+            counter = int(prev[8:]) + 1
+    build_number = f'{today}{counter:02d}'
+    BUILD_STATE.write_text(build_number, encoding='utf-8')
+    return build_number
 
 
 def js_string_literal(text: str) -> str:
@@ -50,11 +68,16 @@ def main():
         raise RuntimeError(f'Could not find stylesheet link tag in index.html')
     html = html.replace(link_tag, f'<style>\n{css}\n</style>', 1)
 
-    # Inject the default config as a global before scrubber.js loads.
+    now = datetime.now()
+    build_number = compute_build_number(now)
+
+    # Inject the default config and build number as globals before scrubber.js
+    # loads. app.js reads __PAYDIRT_BUILD__ to populate the build-number pill.
     config_literal = js_string_literal(default_config)
     config_script = (
         '<script>\n'
         f'window.__PAYDIRT_DEFAULT_CONFIG__ = `{config_literal}`;\n'
+        f'window.__PAYDIRT_BUILD__ = "{build_number}";\n'
         '</script>'
     )
 
@@ -76,11 +99,12 @@ def main():
 
     # Add a build banner at the top of the HTML so anyone inspecting the
     # file knows when it was built and from what version.
-    build_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    build_time = now.strftime('%Y-%m-%d %H:%M:%S')
     banner = (
         f'\n<!--\n'
         f'  Paydirt - Log Scrubber\n'
         f'  Built: {build_time}\n'
+        f'  Build: {build_number}\n'
         f'  Machine Data Insights - machinedatainsights.com\n'
         f'\n'
         f'  This file runs entirely in your browser.\n'
@@ -91,7 +115,7 @@ def main():
 
     OUTPUT.write_text(html, encoding='utf-8')
     size_kb = OUTPUT.stat().st_size / 1024
-    print(f'Built {OUTPUT} ({size_kb:.1f} KB)')
+    print(f'Built {OUTPUT} ({size_kb:.1f} KB, build {build_number})')
 
 
 if __name__ == '__main__':

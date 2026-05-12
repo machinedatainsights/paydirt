@@ -128,6 +128,7 @@
         processingOverlay: $('processing-overlay'),
         processingText: $('processing-text'),
         versionPill: $('version-pill'),
+        buildPill: $('build-pill'),
     };
 
     // ----------------------------------------------------------------------
@@ -136,6 +137,10 @@
 
     function init() {
         dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.2.0');
+        if (window.__PAYDIRT_BUILD__) {
+            dom.buildPill.textContent = window.__PAYDIRT_BUILD__;
+            dom.buildPill.hidden = false;
+        }
 
         // Parse built-in default config once
         builtInConfig = buildConfigFromText(DEFAULT_CONFIG_CSV, 'Built-in defaults');
@@ -447,28 +452,36 @@
     // ----------------------------------------------------------------------
 
     function scrubCsvInput(text) {
+        // Cells are {value, quoted} so we can preserve the quoting style of
+        // the original file - cells that were explicitly quoted in the input
+        // stay quoted even if the scrubbed value no longer requires quoting.
+        // This keeps the side-by-side comparison view free of false-positive
+        // "quote stripped" diffs.
         const rows = parseCsv(text);
         if (rows.length === 0) return text;
 
         const header = rows[0];
+        const headerValues = header.map(c => c.value);
         const out = [formatCsvRow(header)];
 
         for (let r = 1; r < rows.length; r++) {
             const row = rows[r];
             const scrubbedRow = [];
             for (let c = 0; c < row.length; c++) {
-                const cellValue = row[c];
-                const columnName = c < header.length ? header[c] : null;
-                if (cellValue && cellValue.trim()) {
-                    scrubbedRow.push(window.Paydirt.scrubText(
-                        cellValue,
+                const cell = row[c];
+                const columnName = c < headerValues.length ? headerValues[c] : null;
+                let scrubbedValue;
+                if (cell.value && cell.value.trim()) {
+                    scrubbedValue = window.Paydirt.scrubText(
+                        cell.value,
                         activeConfig.textRules,
                         activeConfig.jsonFieldRules,
                         { fieldName: columnName }
-                    ));
+                    );
                 } else {
-                    scrubbedRow.push(cellValue);
+                    scrubbedValue = cell.value;
                 }
+                scrubbedRow.push({ value: scrubbedValue, quoted: cell.quoted });
             }
             out.push(formatCsvRow(scrubbedRow));
         }
@@ -480,11 +493,20 @@
     // newlines, and escaped quotes ("" -> "). Tolerates both \n and \r\n
     // line endings and unterminated final rows.
     function parseCsv(text) {
+        // Returns rows of {value, quoted} cells. `quoted` tracks whether the
+        // input field used surrounding quotes, so the formatter can preserve
+        // the original quoting style on output.
         const rows = [];
         let row = [];
         let field = '';
+        let fieldQuoted = false;
         let inQuotes = false;
         let i = 0;
+        const pushField = () => {
+            row.push({ value: field, quoted: fieldQuoted });
+            field = '';
+            fieldQuoted = false;
+        };
         while (i < text.length) {
             const c = text[i];
             if (inQuotes) {
@@ -503,16 +525,15 @@
             } else {
                 if (c === '"') {
                     inQuotes = true;
+                    fieldQuoted = true;
                     i++;
                 } else if (c === ',') {
-                    row.push(field);
-                    field = '';
+                    pushField();
                     i++;
                 } else if (c === '\n' || c === '\r') {
-                    row.push(field);
+                    pushField();
                     rows.push(row);
                     row = [];
-                    field = '';
                     if (c === '\r' && text[i + 1] === '\n') i += 2;
                     else i++;
                 } else {
@@ -521,25 +542,39 @@
                 }
             }
         }
-        if (field.length > 0 || row.length > 0) {
-            row.push(field);
+        if (field.length > 0 || fieldQuoted || row.length > 0) {
+            pushField();
             rows.push(row);
         }
         return rows;
     }
 
-    // Format a row back to CSV. Quotes any field that contains comma, quote,
-    // newline, or carriage-return, and doubles embedded quotes. Matches
-    // Python's csv module default dialect.
+    // Format a row back to CSV. Cells may be either plain strings or
+    // {value, quoted} objects; in the latter form, a truthy `quoted` forces
+    // quoting even if RFC 4180 wouldn't strictly require it, preserving the
+    // input file's quoting style. Always quotes when content contains comma,
+    // double-quote, or newline. Matches Python's csv module default dialect
+    // for the non-forced case.
     function formatCsvRow(row) {
         return row.map(formatCsvField).join(',');
     }
 
-    function formatCsvField(value) {
-        if (value === null || value === undefined) return '';
+    function formatCsvField(cell) {
+        if (cell === null || cell === undefined) return '';
+        let value, forceQuote;
+        if (typeof cell === 'object') {
+            value = cell.value;
+            forceQuote = !!cell.quoted;
+        } else {
+            value = cell;
+            forceQuote = false;
+        }
+        if (value === null || value === undefined) return forceQuote ? '""' : '';
         const s = String(value);
-        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 ||
-            s.indexOf('\n') !== -1 || s.indexOf('\r') !== -1) {
+        const needsQuote = forceQuote ||
+            s.indexOf(',') !== -1 || s.indexOf('"') !== -1 ||
+            s.indexOf('\n') !== -1 || s.indexOf('\r') !== -1;
+        if (needsQuote) {
             return '"' + s.replace(/"/g, '""') + '"';
         }
         return s;
@@ -903,16 +938,15 @@
             }
         }
 
-        // Config search-term literal matches. Apply a word-boundary check to
-        // avoid highlighting a substring that happens to appear inside a
-        // longer token (e.g., '000000000000' inside hex '0x8020000000000000'
-        // would otherwise be flagged as a custom-rule match).
+        // Config search-term literal matches. No word-boundary check here:
+        // the scrubber does plain literal substring replacement, so the
+        // highlighter must mirror that exactly. If a config rule is too
+        // greedy (e.g., 'cat' matching inside 'concatenate'), surfacing the
+        // highlight helps the user notice and tighten the rule.
         for (const term of configReplacements.searchTerms) {
             let idx = 0;
             while ((idx = line.indexOf(term, idx)) !== -1) {
-                if (isWordBoundaryMatch(line, idx, term.length)) {
-                    ranges.push({ start: idx, end: idx + term.length, kind: 'custom' });
-                }
+                ranges.push({ start: idx, end: idx + term.length, kind: 'custom' });
                 idx += term.length;
             }
         }

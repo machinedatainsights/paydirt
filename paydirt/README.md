@@ -34,6 +34,18 @@ and the bundled default config into a single self-contained HTML file
 (~120 KB). No external dependencies at build time beyond the Python
 standard library.
 
+### Build numbers
+
+Each build is stamped with a `yyyymmddxx` build number where `xx`
+increments for same-day rebuilds (`2026051201`, `2026051202`, ...). The
+number is shown in the header next to the version pill, embedded as a
+comment near the top of `Paydirt.html`, and printed at the end of the
+build output.
+
+The same-day counter is persisted in `paydirt/.last_build` (gitignored).
+If the file is missing or unreadable the counter resets to `01` for the
+current day; nothing depends on a continuous sequence across machines.
+
 ## Testing
 
 ```bash
