@@ -628,6 +628,10 @@ incorporate similar improvements into the canonical version when appropriate.
 - **Parity verified** between the browser tool and the CLI by `shared-tests/run_parity.py`.
 - **Demo fixture** (`paydirt_demo.log` plus companion config) covering all 25 scrubbing categories, with negative test cases.
 - **Reorganized repository layout** with downloadable artifacts at the project root.
+- **Build 2026051205** (May 12, 2026) - point-fixes within v1.2.0:
+  - **Build numbers in the UI**: each build is now stamped with a `yyyymmddxx` build number, shown in the header next to the version pill and embedded as an HTML comment near the top of `Paydirt.html`. The same-day counter (`xx`) increments on rebuilds, so point-fixes within a version can be tracked precisely without bumping the semantic version. See [`paydirt/README.md`](paydirt/README.md#build-numbers) for details.
+  - **Highlight fix in the comparison view**: config search-term highlighting on the original side now uses the same literal split/join match the scrubber itself uses, instead of a regex word-boundary check. Rules like `ns2_,single,""` now correctly highlight `ns2_` inside `ns2_linux` (previously the match was silently dropped because `_` is a word character on both sides of the boundary).
+  - **CSV quote round-trip**: per-cell quoting is now preserved from input to output. Cells that were explicitly quoted in the input stay quoted in the scrubbed output, eliminating cosmetic quote-stripping diffs in the side-by-side view.
 
 ### v1.1.0
 - April 20, 2026
