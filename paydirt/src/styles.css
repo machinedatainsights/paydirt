@@ -572,6 +572,34 @@ button {
     border-color: var(--color-gold-light);
 }
 
+/* Secondary/outline variant: the scrubbing-report download. Visually
+   subordinate to the primary gold Download button but shares its metrics. */
+.report-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background-color: transparent;
+    color: var(--color-gold);
+    border: 1px solid var(--color-gold);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.12s;
+}
+
+.report-button:hover {
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-gold-light);
+    color: var(--color-gold-light);
+}
+
+.report-button:disabled {
+    opacity: 0.55;
+    cursor: progress;
+}
+
 .icon-button {
     display: inline-flex;
     align-items: center;

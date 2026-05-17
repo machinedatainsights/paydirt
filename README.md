@@ -4,7 +4,7 @@ version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 By Machine Data Insights. *There's Gold in That Data!®*  
 
-**[⬇ Download Paydirt v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
+**[⬇ Download Paydirt v1.3.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
 <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
 
@@ -28,7 +28,7 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 
 ## Downloads
 
-**Latest release: [v1.2.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
+**Latest release: [v1.3.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
 **The tool itself:**
 - [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - browser tool. Save, double-click to open, drop log files on it. No install required.
@@ -145,6 +145,30 @@ Paydirt to scrub it.
 The field-value and log-sample searches work with `log_scrubber.py` too -
 export from Splunk, then run `python log_scrubber.py your_export.csv`.
 
+## Audit Report
+
+For audit and accountability workflows, each result in the browser tool has
+a **Report** button next to **Download**. It produces a retainable record of
+*what* scrubbing was performed:
+
+- tool version and build number, plus generation timestamps (local and UTC)
+- source and scrubbed file names with their UTF-8 byte sizes
+- **SHA-256 hashes** of the original and scrubbed text, so the report can be
+  cryptographically tied to the exact files and any later tampering is
+  evident
+- the config source and its rule counts
+- per-category and per-custom-rule redaction counts
+
+The report **contains no sensitive data from the source file by design** -
+it proves scope and volume without disclosing the values that were removed,
+and is generated entirely in the browser (SubtleCrypto for the hashes). The
+file is a human-readable header followed by a machine-readable JSON block.
+
+The redaction counts use the same heuristic as the Summary tab and are
+documented in the report as a summary, **not** a line-level certification;
+random-mode rules are non-deterministic. The audit report is browser-only in
+this release; a `log_scrubber.py` counterpart is planned.
+
 ## Repository Layout
 
 ```
@@ -237,7 +261,7 @@ first against your Splunk metadata index:
 ```spl
 | tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
-| sort -event_count
+| sort sourcetype
 ```
 
 Replace `{sourcetype(s)}` with a specific sourcetype or wildcarded filter
@@ -621,6 +645,11 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ## Version History
 
+### v1.3.0
+- May 17, 2026
+- **Scrubbing report (audit artifact)**: each result card has a new **Report** button that downloads a retainable record of *what* was scrubbed - tool/build, timestamps, file names and sizes, **SHA-256** of the original and scrubbed text, config and rule counts, and per-category/per-rule redaction counts. Contains no source data by design; generated in-browser via SubtleCrypto. See [Audit Report](#audit-report).
+- **Audit report is browser-only in this release.** `log_scrubber.py` stays at 1.2.0, kept in sync with the Data Refinery scrubber; a CLI report counterpart is planned.
+
 ### v1.2.0
 - April 24, 2026
 - **First public release** under the Apache License 2.0.
@@ -632,6 +661,8 @@ incorporate similar improvements into the canonical version when appropriate.
   - **Build numbers in the UI**: each build is now stamped with a `yyyymmddxx` build number, shown in the header next to the version pill and embedded as an HTML comment near the top of `Paydirt.html`. The same-day counter (`xx`) increments on rebuilds, so point-fixes within a version can be tracked precisely without bumping the semantic version. See [`paydirt/README.md`](paydirt/README.md#build-numbers) for details.
   - **Highlight fix in the comparison view**: config search-term highlighting on the original side now uses the same literal split/join match the scrubber itself uses, instead of a regex word-boundary check. Rules like `ns2_,single,""` now correctly highlight `ns2_` inside `ns2_linux` (previously the match was silently dropped because `_` is a word character on both sides of the boundary).
   - **CSV quote round-trip**: per-cell quoting is now preserved from input to output. Cells that were explicitly quoted in the input stay quoted in the scrubbed output, eliminating cosmetic quote-stripping diffs in the side-by-side view.
+- **Build 2026051702** (May 17, 2026) - point-fix within v1.2.0:
+  - **Discover Sourcetypes sort order**: the *Discover sourcetypes* helper query now ends with `| sort sourcetype` instead of `| sort -event_count`, so results are ordered alphabetically by sourcetype name rather than by event volume. Updated in the browser tool, `README.md`, and [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md).
 
 ### v1.1.0
 - April 20, 2026
@@ -651,4 +682,4 @@ incorporate similar improvements into the canonical version when appropriate.
 
 **Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
   
-*Version 1.2.0 - April 24, 2026*
+*Version 1.3.0 - May 17, 2026*

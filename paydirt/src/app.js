@@ -12,6 +12,7 @@
 // - Tabbed view: Scrubbed (plain), Comparison (side-by-side), Summary
 // - Line-level diff highlighting and synchronized scrolling
 // - Download of scrubbed output
+// - Download of a non-sensitive scrubbing report (audit artifact)
 //
 // Everything runs in-browser. No network calls. No inline event handlers
 // (CSP-strict). All event binding happens here programmatically.
@@ -136,7 +137,7 @@
     // ----------------------------------------------------------------------
 
     function init() {
-        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.2.0');
+        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.0');
         if (window.__PAYDIRT_BUILD__) {
             dom.buildPill.textContent = window.__PAYDIRT_BUILD__;
             dom.buildPill.hidden = false;
@@ -648,9 +649,13 @@
         // Wire up tab switching
         wireUpTabs(card);
 
-        // Wire up download + remove
+        // Wire up download + report + remove
         card.querySelector('[data-action="download"]').addEventListener('click', () => {
             downloadText(scrubbed, buildScrubbedFilename(filename));
+        });
+        const reportBtn = card.querySelector('[data-action="download-report"]');
+        reportBtn.addEventListener('click', () => {
+            generateAndDownloadReport(filename, original, scrubbed, reportBtn);
         });
         card.querySelector('[data-action="remove"]').addEventListener('click', () => {
             card.remove();
@@ -678,6 +683,8 @@
         panelsContainer.appendChild(errDiv);
         card.querySelector('.result-tabs').remove();
         card.querySelector('[data-action="download"]').remove();
+        const errReportBtn = card.querySelector('[data-action="download-report"]');
+        if (errReportBtn) errReportBtn.remove();
         card.querySelector('[data-action="remove"]').addEventListener('click', () => {
             card.remove();
             updateResultsVisibility();
@@ -1280,6 +1287,7 @@
             if (redacted > 0) {
                 results.push({
                     label: 'Custom: ' + truncateLabel(term),
+                    term: term,
                     count: redacted,
                     isCustom: true,
                 });
@@ -1303,6 +1311,201 @@
 
     function truncateLabel(s) {
         return s.length > 40 ? s.substring(0, 37) + '...' : s;
+    }
+
+    // ----------------------------------------------------------------------
+    // Scrubbing report (audit / accountability artifact)
+    //
+    // A retainable record of WHAT scrubbing was performed - deliberately
+    // distinct from the scrubbed-output download. The report contains:
+    //   - tool version + build, timestamps
+    //   - source and scrubbed file names, UTF-8 byte sizes
+    //   - SHA-256 of the original and scrubbed text, so the report can be
+    //     cryptographically tied to specific files and tampering is evident
+    //   - config source and rule counts
+    //   - per-category and per-custom-rule redaction counts (same heuristic
+    //     the Summary tab shows)
+    //
+    // It contains NO sensitive data from the source file by design: it proves
+    // scope and volume, it does not disclose the values that were removed.
+    // Everything is computed in-browser; no network, no dependencies.
+    // ----------------------------------------------------------------------
+
+    const REPORT_DISCLAIMER =
+        'Redaction counts are derived heuristically by comparing the original ' +
+        'and scrubbed text. They summarize the scrubbing that was performed; ' +
+        'they are not a line-level certification and do not list the sensitive ' +
+        'values that were removed (by design - this report contains no ' +
+        'sensitive data from the source file). Random-mode replacement rules ' +
+        'are non-deterministic and are not reproducible. SHA-256 hashes are ' +
+        'computed over the UTF-8 text content as processed in the browser, ' +
+        'which may differ from the raw file bytes if the source used a ' +
+        'different text encoding, a byte-order mark, or different line endings.';
+
+    function utf8ByteLength(text) {
+        return new TextEncoder().encode(text).length;
+    }
+
+    function sha256Hex(text) {
+        // Returns a Promise<string|null>. null when SubtleCrypto is not
+        // available (e.g. an insecure context or a locked-down browser);
+        // callers render that as an explicit "unavailable" note rather than
+        // failing the whole report.
+        if (!(window.crypto && window.crypto.subtle && window.crypto.subtle.digest)) {
+            return Promise.resolve(null);
+        }
+        const data = new TextEncoder().encode(text);
+        return window.crypto.subtle.digest('SHA-256', data).then(buf => {
+            const bytes = new Uint8Array(buf);
+            let hex = '';
+            for (let i = 0; i < bytes.length; i++) {
+                hex += bytes[i].toString(16).padStart(2, '0');
+            }
+            return hex;
+        }).catch(() => null);
+    }
+
+    function buildReportFilename(filename) {
+        const ts = new Date().toISOString().slice(0, 19)
+            .replace(/[-:T]/g, '').replace(/^(\d{8})(\d{6})/, '$1_$2');
+        const dotIdx = filename.lastIndexOf('.');
+        const base = dotIdx > 0 ? filename.slice(0, dotIdx) : filename;
+        return base + '_scrubbing_report_' + ts + '.txt';
+    }
+
+    function buildReportArtifact(filename, original, scrubbed) {
+        const counts = computeRedactionCounts(original, scrubbed);
+        const byCategory = counts
+            .filter(c => !c.isCustom && c.count > 0)
+            .map(c => ({ category: c.label, count: c.count }));
+        const byCustomRule = counts
+            .filter(c => c.isCustom)
+            .map(c => ({ rule: c.term, count: c.count }));
+        const total = byCategory.reduce((s, c) => s + c.count, 0)
+                     + byCustomRule.reduce((s, c) => s + c.count, 0);
+
+        return Promise.all([sha256Hex(original), sha256Hex(scrubbed)])
+            .then(([origHash, scrubHash]) => {
+                const now = new Date();
+                const data = {
+                    report_type: 'Paydirt scrubbing report',
+                    report_schema: 1,
+                    tool: {
+                        name: 'Paydirt',
+                        version: (window.Paydirt && window.Paydirt.version) || '1.3.0',
+                        build: window.__PAYDIRT_BUILD__ || null,
+                    },
+                    generated_at_utc: now.toISOString(),
+                    generated_at_local: now.toLocaleString(),
+                    source_file: {
+                        name: filename,
+                        bytes_utf8: utf8ByteLength(original),
+                        sha256: origHash,
+                    },
+                    scrubbed_output: {
+                        name: buildScrubbedFilename(filename),
+                        bytes_utf8: utf8ByteLength(scrubbed),
+                        sha256: scrubHash,
+                    },
+                    config: {
+                        source: activeConfig.source,
+                        text_rules: activeConfig.textRules.length,
+                        json_rules: activeConfig.jsonFieldRules.length,
+                    },
+                    redactions: {
+                        total: total,
+                        by_category: byCategory,
+                        by_custom_rule: byCustomRule,
+                    },
+                    hash_algorithm: 'SHA-256 over UTF-8 text content',
+                    notes: REPORT_DISCLAIMER,
+                };
+                return renderReport(data);
+            });
+    }
+
+    function renderReport(d) {
+        const bar = '='.repeat(64);
+        const dash = '-'.repeat(64);
+        const naHash = 'unavailable (crypto.subtle not accessible in this context)';
+        const pad = (label) => (String(label) + ' ').padEnd(34, '.') + ' ';
+        const L = [];
+        L.push(bar);
+        L.push(' Paydirt Scrubbing Report');
+        L.push(bar);
+        L.push(' Tool:            ' + d.tool.name + ' v' + d.tool.version +
+               (d.tool.build ? ' (build ' + d.tool.build + ')' : ''));
+        L.push(' Generated:       ' + d.generated_at_local + ' (local)');
+        L.push(' Generated (UTC): ' + d.generated_at_utc);
+        L.push('');
+        L.push(' Source file:     ' + d.source_file.name);
+        L.push('   Size:          ' + d.source_file.bytes_utf8 + ' bytes (UTF-8)');
+        L.push('   SHA-256:       ' + (d.source_file.sha256 || naHash));
+        L.push('');
+        L.push(' Scrubbed output: ' + d.scrubbed_output.name);
+        L.push('   Size:          ' + d.scrubbed_output.bytes_utf8 + ' bytes (UTF-8)');
+        L.push('   SHA-256:       ' + (d.scrubbed_output.sha256 || naHash));
+        L.push('');
+        L.push(' Config:          ' + d.config.source +
+               ' (' + d.config.text_rules + ' text, ' + d.config.json_rules + ' @json rules)');
+        L.push('');
+        L.push(' Total redactions: ' + d.redactions.total);
+        L.push('');
+        if (d.redactions.by_category.length) {
+            L.push(' Redactions by category:');
+            d.redactions.by_category.forEach(c => {
+                L.push('   ' + pad(c.category) + c.count);
+            });
+            L.push('');
+        }
+        if (d.redactions.by_custom_rule.length) {
+            L.push(' Custom rule redactions:');
+            d.redactions.by_custom_rule.forEach(c => {
+                L.push('   ' + pad(c.rule) + c.count);
+            });
+            L.push('');
+        }
+        L.push(dash);
+        L.push(wrapText('NOTE: ' + d.notes, 62, ' '));
+        L.push(dash);
+        L.push('');
+        L.push('--- BEGIN MACHINE-READABLE JSON ---');
+        L.push(JSON.stringify(d, null, 2));
+        L.push('--- END MACHINE-READABLE JSON ---');
+        L.push('');
+        return L.join('\n');
+    }
+
+    function wrapText(text, width, indent) {
+        indent = indent || '';
+        const words = String(text).split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = '';
+        for (const w of words) {
+            if (line && (line.length + 1 + w.length) > width) {
+                lines.push(indent + line);
+                line = w;
+            } else {
+                line = line ? line + ' ' + w : w;
+            }
+        }
+        if (line) lines.push(indent + line);
+        return lines.join('\n');
+    }
+
+    function generateAndDownloadReport(filename, original, scrubbed, btn) {
+        if (btn) btn.disabled = true;
+        buildReportArtifact(filename, original, scrubbed)
+            .then(text => {
+                downloadText(text, buildReportFilename(filename));
+            })
+            .catch(err => {
+                alert('Failed to build scrubbing report: ' +
+                      ((err && err.message) || String(err)));
+            })
+            .then(() => {
+                if (btn) btn.disabled = false;
+            });
     }
 
     // ----------------------------------------------------------------------

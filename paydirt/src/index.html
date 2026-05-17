@@ -115,7 +115,7 @@
                     </div>
                     <pre class="spl-code"><code>| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
-| sort -event_count</code></pre>
+| sort sourcetype</code></pre>
                 </div>
 
                 <div class="spl-block">
@@ -237,6 +237,12 @@
                         <path d="M8 1 L8 11 M4 7 L8 11 L12 7 M2 14 L14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     Download
+                </button>
+                <button type="button" class="report-button" data-action="download-report" title="Download a non-sensitive scrubbing report (counts, metadata, SHA-256 hashes). Contains no data from the source file.">
+                    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <path d="M4 1.5 L4 14.5 L12 14.5 L12 5 L8.5 1.5 Z M8.5 1.5 L8.5 5 L12 5 M6 8 L10 8 M6 11 L10 11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Report
                 </button>
                 <button type="button" class="icon-button" data-action="remove" aria-label="Remove this result">
                     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">

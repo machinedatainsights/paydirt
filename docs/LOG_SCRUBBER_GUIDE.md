@@ -76,7 +76,7 @@ first against your Splunk metadata index:
 ```spl
 | tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
-| sort -event_count
+| sort sourcetype
 ```
 
 Replace `{sourcetype(s)}` with a specific sourcetype or wildcarded filter
@@ -406,4 +406,4 @@ terms.
 
 **Machine Data Insights Inc.** *"There's Gold In That Data!"<sup>®</sup>* | [machinedatainsights.com](https://machinedatainsights.com)  
   
-*Version 1.2.0 - April 24, 2026*
+*Version 1.3.0 - May 17, 2026*
