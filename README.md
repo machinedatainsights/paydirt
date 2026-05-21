@@ -127,9 +127,11 @@ with three searches:
   long as the result set stays a manageable size.
 
 Each block has a **Copy** button to drop the SPL into your clipboard with
-one click. Substitute your own `{index}` and `{sourcetype}` values, run the
-search in Splunk Web, click **Export → CSV**, and drop the saved file onto
-Paydirt to scrub it.
+one click. The **Field-value samples** search has a `{sourcetype}`
+placeholder to fill in; the **Log samples** search uses
+`index=* sourcetype=* source=*` and runs as-is - narrow those wildcards if
+your environment is large. Run the search in Splunk Web, click
+**Export → CSV**, and drop the saved file onto Paydirt to scrub it.
 
 > **Don't scrub the discovery export.** Sourcetype, index, and source names
 > are structural metadata, not log content - they need to stay verbatim so

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   Paydirt - Log Scrubber
-  Built: 2026-05-17 14:42:57
-  Build: 2026051703
+  Built: 2026-05-21 06:41:51
+  Build: 2026052101
   Machine Data Insights - machinedatainsights.com
 
   This file runs entirely in your browser.
@@ -1341,7 +1341,7 @@ button {
                         <span class="spl-meta">last 7 days</span>
                         <button type="button" class="spl-copy-btn" data-spl="fieldsummary" title="Copy SPL to clipboard">Copy</button>
                     </div>
-                    <pre class="spl-code"><code>index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
+                    <pre class="spl-code"><code>index=* sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
 | fieldsummary maxvals=5
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
@@ -1354,8 +1354,10 @@ button {
                         <span class="spl-meta">last 1 day</span>
                         <button type="button" class="spl-copy-btn" data-spl="samples" title="Copy SPL to clipboard">Copy</button>
                     </div>
-                    <pre class="spl-code"><code>index=<em>{index}</em> sourcetype="<em>{sourcetype}</em>" earliest=-1d@d
-| dedup punct | head 20</code></pre>
+                    <pre class="spl-code"><code>index=* sourcetype=* source=* earliest=-1d@d
+| dedup punct
+| head 20
+| table index sourcetype source _raw</code></pre>
                 </div>
             </div>
         </details>
@@ -1623,7 +1625,7 @@ john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.c
 # ============================================================================
 
 `;
-window.__PAYDIRT_BUILD__ = "2026051703";
+window.__PAYDIRT_BUILD__ = "2026052101";
 </script>
 <script>
 // SPDX-License-Identifier: Apache-2.0
