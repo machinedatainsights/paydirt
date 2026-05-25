@@ -410,7 +410,7 @@ Luhn and NPI validators run inside the match, so ordinary 10-to-19-digit numbers
 
 ### Config File Format
 
-The config file is a CSV with three types of rules:
+The config file is a CSV with four types of rules:
 
 **Text substitution** - replaces literal strings anywhere in the data:
 
@@ -439,6 +439,24 @@ my-company.com,example.com
 # Use the tag's key name (not "key" itself)
 @json,Owner,random,"user_a@example.com,user_b@example.com"
 @json,Environment,REDACTED_ENV
+```
+
+**Bulk name lists** (`@names` prefix, v1.3.1+) - one config row expands at load time into one text rule per listed name, so a personal-name roster (e.g. an employee/contractor list inside a log sample) doesn't need a separate row per person. Both `single` and `random` replacement modes are supported, with the same semantics as ordinary text rules (in `random` mode each occurrence picks independently, so a given source name may map to different replacements at different points in the file):
+
+```csv
+# Every listed name maps to the same replacement
+@names,"Alice Smith,Bob Jones,Carol Davis",single,REDACTED_NAME
+
+# Each occurrence picks randomly from the replacement pool
+@names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",random,"John Doe,Jane Doe,Joe Smith"
+```
+
+The names list is just a quoted CSV field, so it can be broken across lines for readability:
+
+```csv
+@names,"Thomas Kincade,
+Mary Bruce,
+Joe Wadamaker",random,"John Doe,Jane Doe,Joe Smith"
 ```
 
 Lines starting with `#` are treated as comments.
@@ -568,6 +586,9 @@ my-splunk-server,single,splunk-host
 @json,Owner,random,"user_a@example.com,user_b@example.com"
 @json,Name,REDACTED_NAME
 @json,Environment,random,"dev,staging,prod"
+
+# === Bulk Name Lists ===
+@names,"Alice Smith,Bob Jones,Carol Davis",random,"John Doe,Jane Doe,Joe Smith"
 ```
 
 ## Command Reference

@@ -112,7 +112,7 @@ john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.c
 #
 # @names,"Thomas Kincade,
 # Mary Bruce,
-# Joe Wadamaker",random,"John Doe,Jane Doe,Joe Dirt"
+# Joe Wadamaker",random,"John Doe,Jane Doe,Joe Smith"
 #
 # Or as a single line:
 # @names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",single,"REDACTED_NAME"

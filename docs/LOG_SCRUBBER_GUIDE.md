@@ -218,7 +218,7 @@ See the README for the full list of detected marking styles.
 
 ### Config File Format
 
-The config file is a CSV with three types of rules:
+The config file is a CSV with four types of rules:
 
 **Text substitution** - replaces literal strings anywhere in the data:
 
@@ -254,6 +254,30 @@ nesting depth in JSON data:
 @json,Environment,REDACTED_ENV
 ```
 
+**Bulk name lists** (`@names` prefix, v1.3.1+) - one config row expands at
+load time into one text rule per listed name, so an employee/contractor
+roster doesn't need a separate row per person. Supports both `single` and
+`random` replacement modes, with the same semantics as ordinary text rules
+(in `random` mode each occurrence picks independently, so a given source
+name may map to different replacements at different points in the file):
+
+```csv
+# Every listed name maps to the same replacement
+@names,"Alice Smith,Bob Jones,Carol Davis",single,REDACTED_NAME
+
+# Each occurrence picks randomly from the replacement pool
+@names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",random,"John Doe,Jane Doe,Joe Smith"
+```
+
+The names list is just a quoted CSV field, so it can be broken across
+lines for readability:
+
+```csv
+@names,"Thomas Kincade,
+Mary Bruce,
+Joe Wadamaker",random,"John Doe,Jane Doe,Joe Smith"
+```
+
 Lines starting with `#` are treated as comments.
 
 ### Example Config File
@@ -272,6 +296,9 @@ my-splunk-server,single,splunk-host
 @json,Owner,random,"user_a@example.com,user_b@example.com"
 @json,Name,REDACTED_NAME
 @json,Environment,random,"dev,staging,prod"
+
+# === Bulk Name Lists ===
+@names,"Alice Smith,Bob Jones,Carol Davis",random,"John Doe,Jane Doe,Joe Smith"
 ```
 
 ## Command Reference

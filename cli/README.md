@@ -14,9 +14,9 @@ From the project root:
 python3 cli/test_scrubber.py
 ```
 
-The test suite has 50 tests covering:
+The test suite has 59 tests covering:
 
-- Config parsing (text rules, @json rules, nested paths, random mode, comments)
+- Config parsing (text rules, @json rules, @names directive expansion, nested paths, random mode, comments)
 - CUI marking detection (banner, portion, legacy, adjacent styles)
 - Credential and token patterns (AWS keys, JWTs, GitHub tokens, etc.)
 - PII patterns (SSN with invalid-range exclusions, Luhn-validated credit
