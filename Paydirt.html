@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   Paydirt - Log Scrubber
-  Built: 2026-05-21 06:41:51
-  Build: 2026052101
+  Built: 2026-05-25 09:13:02
+  Build: 2026052501
   Machine Data Insights - machinedatainsights.com
 
   This file runs entirely in your browser.
@@ -1616,16 +1616,38 @@ john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.c
 # ============================================================================
 
 # ============================================================================
+# @names directive (v1.3.1+) - bulk personal-name scrubbing
+# Format: @names,"Name 1,Name 2,...",mode,replacement_values
+#
+# Expands at load time into one text rule per source name. Both modes are
+# supported, with the same semantics as ordinary text rules:
+#   single  - every listed name maps to the same replacement
+#   random  - each occurrence of each listed name picks independently from
+#             the replacement list (per-match, not per-name)
+#
+# Because the names list is a quoted CSV field, you may break it across
+# lines for readability:
+#
+# @names,"Thomas Kincade,
+# Mary Bruce,
+# Joe Wadamaker",random,"John Doe,Jane Doe,Joe Dirt"
+#
+# Or as a single line:
+# @names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",single,"REDACTED_NAME"
+# ============================================================================
+
+# ============================================================================
 # CUSTOM CONFIGURATIONS
 # Add your organization-specific rules below. Some examples to get started:
 #
 #   MYCOMPANY-HOST01,single,HOST-REDACTED
 #   @mycompany.internal,single,@example.com
 #   @json,myCustomFieldName,REDACTED_VALUE
+#   @names,"Alice Smith,Bob Jones",random,"User A,User B,User C"
 # ============================================================================
 
 `;
-window.__PAYDIRT_BUILD__ = "2026052101";
+window.__PAYDIRT_BUILD__ = "2026052501";
 </script>
 <script>
 // SPDX-License-Identifier: Apache-2.0
@@ -1652,7 +1674,7 @@ window.__PAYDIRT_BUILD__ = "2026052101";
 // log_scrubber.py so a reader can cross-reference the two.
 // ============================================================================
 
-const PAYDIRT_VERSION = '1.3.0';
+const PAYDIRT_VERSION = '1.3.1';
 
 // ============================================================================
 // CUI Marking Detection (CMMC / NIST SP 800-171)
@@ -1826,6 +1848,8 @@ function redactNpis(text) {
 //   @json,field_name,replacement                 (json, implicit single)
 //   @json,field_name,single,replacement          (json, explicit single)
 //   @json,field_name,random,"val1,val2,val3"     (json, random mode)
+//   @names,"N1,N2,N3",single,"Replacement"       (expands to one text rule per name)
+//   @names,"N1,N2,N3",random,"R1,R2,R3"          (each match picks randomly)
 
 function parseScrubbingConfig(csvText) {
     const textRules = [];
@@ -1852,6 +1876,16 @@ function parseScrubbingConfig(csvText) {
             } else {
                 const replacement = (row[2] || '').trim();
                 jsonFieldRules.push([fieldName, 'single', replacement]);
+            }
+        } else if (first.toLowerCase() === '@names') {
+            if (row.length < 4) continue;
+            const mode = (row[2] || '').trim().toLowerCase();
+            if (mode !== 'single' && mode !== 'random') continue;
+            const replacementValues = (row[3] || '').trim();
+            const names = (row[1] || '').split(',');
+            for (const raw of names) {
+                const name = raw.trim();
+                if (name) textRules.push([name, mode, replacementValues]);
             }
         } else {
             // Text rule: 2-col (search,replacement) or 3-col (search,mode,replacement)
@@ -2485,7 +2519,7 @@ if (typeof module !== 'undefined' && module.exports) {
     // ----------------------------------------------------------------------
 
     function init() {
-        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.0');
+        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.1');
         if (window.__PAYDIRT_BUILD__) {
             dom.buildPill.textContent = window.__PAYDIRT_BUILD__;
             dom.buildPill.hidden = false;
@@ -3740,7 +3774,7 @@ if (typeof module !== 'undefined' && module.exports) {
                     report_schema: 1,
                     tool: {
                         name: 'Paydirt',
-                        version: (window.Paydirt && window.Paydirt.version) || '1.3.0',
+                        version: (window.Paydirt && window.Paydirt.version) || '1.3.1',
                         build: window.__PAYDIRT_BUILD__ || null,
                     },
                     generated_at_utc: now.toISOString(),

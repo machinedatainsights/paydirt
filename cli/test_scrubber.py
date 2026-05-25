@@ -3,7 +3,7 @@
 # Copyright 2026 Machine Data Insights Inc.
 # https://machinedatainsights.com
 """
-Test suite for log_scrubber v1.2.0.
+Test suite for log_scrubber v1.3.1.
 
 Covers:
  - Nested @json path bug fix (the original issue)
@@ -375,6 +375,55 @@ with tempfile.TemporaryDirectory() as tmp:
                               os.path.join(tmp, "b.csv")])
     check("dedup preserves first occurrence",
           len(out), expected_eq=2)
+
+
+# ==========================================================================
+# 10. @names directive expansion in parse_scrubbing_config
+# ==========================================================================
+print("\n[10] @names directive expands into one text rule per name")
+
+with tempfile.TemporaryDirectory() as tmp:
+    cfg_path = os.path.join(tmp, "cfg.csv")
+    with open(cfg_path, "w", encoding="utf-8") as f:
+        f.write(
+            '@names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",random,"John Doe,Jane Doe"\n'
+            '@names,"Alice Smith,Bob Jones",single,REDACTED_NAME\n'
+        )
+    text_rules, _ = parse_scrubbing_config(cfg_path)
+
+    by_term = {term: (mode, repl) for term, mode, repl in text_rules}
+    check("@names random: Thomas Kincade rule present",
+          by_term.get("Thomas Kincade"), expected_eq=("random", "John Doe,Jane Doe"))
+    check("@names random: Mary Bruce rule present",
+          by_term.get("Mary Bruce"), expected_eq=("random", "John Doe,Jane Doe"))
+    check("@names random: Joe Wadamaker rule present",
+          by_term.get("Joe Wadamaker"), expected_eq=("random", "John Doe,Jane Doe"))
+    check("@names single: Alice Smith rule present",
+          by_term.get("Alice Smith"), expected_eq=("single", "REDACTED_NAME"))
+    check("@names single: Bob Jones rule present",
+          by_term.get("Bob Jones"), expected_eq=("single", "REDACTED_NAME"))
+    check("@names produced exactly 5 text rules",
+          len(text_rules), expected_eq=5)
+
+    # Multi-line quoted list (RFC-4180 form) parses identically.
+    cfg_path2 = os.path.join(tmp, "cfg2.csv")
+    with open(cfg_path2, "w", encoding="utf-8") as f:
+        f.write(
+            '@names,"Thomas Kincade,\n'
+            'Mary Bruce,\n'
+            'Joe Wadamaker",single,REDACTED\n'
+        )
+    text_rules2, _ = parse_scrubbing_config(cfg_path2)
+    terms = sorted(t for t, _, _ in text_rules2)
+    check("multi-line @names list parses to 3 names",
+          terms, expected_eq=["Joe Wadamaker", "Mary Bruce", "Thomas Kincade"])
+
+    # End-to-end: @names single rule scrubs matching text in scrub_text.
+    out = scrub_text("Email from Alice Smith to Bob Jones about lunch", text_rules, [])
+    check("@names single rule scrubs both names in text",
+          out, expected_not_in=["Alice Smith", "Bob Jones"])
+    check("@names single replacement appears",
+          out, expected_in="REDACTED_NAME")
 
 
 # ==========================================================================

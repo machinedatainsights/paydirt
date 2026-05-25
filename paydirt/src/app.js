@@ -137,7 +137,7 @@
     // ----------------------------------------------------------------------
 
     function init() {
-        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.0');
+        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.1');
         if (window.__PAYDIRT_BUILD__) {
             dom.buildPill.textContent = window.__PAYDIRT_BUILD__;
             dom.buildPill.hidden = false;
@@ -1392,7 +1392,7 @@
                     report_schema: 1,
                     tool: {
                         name: 'Paydirt',
-                        version: (window.Paydirt && window.Paydirt.version) || '1.3.0',
+                        version: (window.Paydirt && window.Paydirt.version) || '1.3.1',
                         build: window.__PAYDIRT_BUILD__ || null,
                     },
                     generated_at_utc: now.toISOString(),

@@ -22,7 +22,7 @@
 // log_scrubber.py so a reader can cross-reference the two.
 // ============================================================================
 
-const PAYDIRT_VERSION = '1.3.0';
+const PAYDIRT_VERSION = '1.3.1';
 
 // ============================================================================
 // CUI Marking Detection (CMMC / NIST SP 800-171)
@@ -196,6 +196,8 @@ function redactNpis(text) {
 //   @json,field_name,replacement                 (json, implicit single)
 //   @json,field_name,single,replacement          (json, explicit single)
 //   @json,field_name,random,"val1,val2,val3"     (json, random mode)
+//   @names,"N1,N2,N3",single,"Replacement"       (expands to one text rule per name)
+//   @names,"N1,N2,N3",random,"R1,R2,R3"          (each match picks randomly)
 
 function parseScrubbingConfig(csvText) {
     const textRules = [];
@@ -222,6 +224,16 @@ function parseScrubbingConfig(csvText) {
             } else {
                 const replacement = (row[2] || '').trim();
                 jsonFieldRules.push([fieldName, 'single', replacement]);
+            }
+        } else if (first.toLowerCase() === '@names') {
+            if (row.length < 4) continue;
+            const mode = (row[2] || '').trim().toLowerCase();
+            if (mode !== 'single' && mode !== 'random') continue;
+            const replacementValues = (row[3] || '').trim();
+            const names = (row[1] || '').split(',');
+            for (const raw of names) {
+                const name = raw.trim();
+                if (name) textRules.push([name, mode, replacementValues]);
             }
         } else {
             // Text rule: 2-col (search,replacement) or 3-col (search,mode,replacement)

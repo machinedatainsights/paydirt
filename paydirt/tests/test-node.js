@@ -288,6 +288,40 @@ check('config parser: dotted-path @json rule',
     parsed.jsonFieldRules[2][0], {eq: 'userIdentity.arn'});
 
 // ==========================================================================
+// 9. @names directive expansion (parity with Python parse_scrubbing_config)
+// ==========================================================================
+console.log('\n[9] @names directive');
+
+const namesCfg = '@names,"Thomas Kincade,Mary Bruce,Joe Wadamaker",random,"John Doe,Jane Doe"\n' +
+                 '@names,"Alice Smith,Bob Jones",single,REDACTED_NAME\n';
+const namesParsed = parseScrubbingConfig(namesCfg);
+check('@names produced 5 text rules', namesParsed.textRules.length, {eq: 5});
+
+const byTerm = Object.fromEntries(namesParsed.textRules.map(r => [r[0], [r[1], r[2]]]));
+check('@names random: Thomas Kincade',
+    byTerm['Thomas Kincade'], {eq: ['random', 'John Doe,Jane Doe']});
+check('@names random: Mary Bruce',
+    byTerm['Mary Bruce'], {eq: ['random', 'John Doe,Jane Doe']});
+check('@names random: Joe Wadamaker',
+    byTerm['Joe Wadamaker'], {eq: ['random', 'John Doe,Jane Doe']});
+check('@names single: Alice Smith',
+    byTerm['Alice Smith'], {eq: ['single', 'REDACTED_NAME']});
+check('@names single: Bob Jones',
+    byTerm['Bob Jones'], {eq: ['single', 'REDACTED_NAME']});
+
+// Multi-line quoted list - RFC-4180-ish parser accepts embedded newlines.
+const multilineCfg = '@names,"Thomas Kincade,\nMary Bruce,\nJoe Wadamaker",single,REDACTED\n';
+const multilineParsed = parseScrubbingConfig(multilineCfg);
+const sortedTerms = multilineParsed.textRules.map(r => r[0]).sort();
+check('multi-line @names parses to 3 names',
+    sortedTerms, {eq: ['Joe Wadamaker', 'Mary Bruce', 'Thomas Kincade']});
+
+// End-to-end: @names single rule scrubs both names via scrubText.
+const namesOut = scrubText('Email from Alice Smith to Bob Jones', namesParsed.textRules, []);
+check('@names single rule scrubs both names',
+    namesOut, {notContains: ['Alice Smith', 'Bob Jones'], contains: 'REDACTED_NAME'});
+
+// ==========================================================================
 // Summary
 // ==========================================================================
 console.log('\n' + '='.repeat(50));

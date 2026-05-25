@@ -1,12 +1,14 @@
 # Paydirt + Log Scrubber 
-<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=70> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk log exports so they can be mined for value. Drop a file, get a sanitized
+<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=60> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk log exports so they can be mined for value. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 By Machine Data Insights. *There's Gold in That Data!®*  
 
-**[⬇ Download Paydirt v1.3.0](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
+**[⬇ Download Paydirt v1.3.1](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
-<img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=725>
+<center>
+<img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=675>
+</center>
 
 *Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*
 
@@ -28,7 +30,7 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 
 ## Downloads
 
-**Latest release: [v1.3.0](https://github.com/machinedatainsights/paydirt/releases/latest)**
+**Latest release: [v1.3.1](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
 **The tool itself:**
 - [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - browser tool. Save, double-click to open, drop log files on it. No install required.
@@ -647,6 +649,11 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ## Version History
 
+### v1.3.1
+- May 25, 2026
+- **`@names` config directive**: a single config row expands into one text rule per listed name, so bulk personal-name scrubbing (e.g. an employee/contractor roster within a log sample) no longer needs one CSV row per name. Supports both `single` and `random` replacement modes, and the names list can be broken across lines inside its quoted field for readability. See the `@names` block in `log_scrubbing_config.csv` for examples.
+- **CLI and browser back in sync**: `log_scrubber.py` rejoins Paydirt.html at the same version — both engines implement `@names` with identical semantics, verified by `shared-tests/run_parity.py`.
+
 ### v1.3.0
 - May 17, 2026
 - **Scrubbing report (audit artifact)**: each result card has a new **Report** button that downloads a retainable record of *what* was scrubbed - tool/build, timestamps, file names and sizes, **SHA-256** of the original and scrubbed text, config and rule counts, and per-category/per-rule redaction counts. Contains no source data by design; generated in-browser via SubtleCrypto. See [Audit Report](#audit-report).
@@ -684,4 +691,4 @@ incorporate similar improvements into the canonical version when appropriate.
 
 **Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
   
-*Version 1.3.0 - May 17, 2026*
+*Version 1.3.1 - May 25, 2026*

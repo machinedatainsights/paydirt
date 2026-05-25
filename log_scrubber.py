@@ -56,7 +56,7 @@ Splunk SPL for exporting log samples (run in Splunk Web → export as CSV):
     index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
     | dedup punct | head 20
 
-Version: 1.2.0
+Version: 1.3.1
 Copyright (c) 2026 Machine Data Insights Inc.
 https://machinedatainsights.com
 """
@@ -73,7 +73,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-__version__ = "1.2.0"
+__version__ = "1.3.1"
 
 
 # ============================================================================
@@ -320,6 +320,10 @@ def parse_scrubbing_config(config_path: str) -> Tuple[list, list]:
         @json,field_name,replacement                    (implicit single)
         @json,field_name,single,replacement
         @json,field_name,random,"val1,val2,val3"
+
+        # Names list (expands into one text rule per source name)
+        @names,"Name 1,Name 2,Name 3",single,"Replacement"
+        @names,"Name 1,Name 2,Name 3",random,"Repl A,Repl B,Repl C"
     """
     text_rules = []
     json_field_rules = []
@@ -349,6 +353,17 @@ def parse_scrubbing_config(config_path: str) -> Tuple[list, list]:
                     else:
                         replacement = row[2].strip()
                         json_field_rules.append((field_name, "single", replacement))
+                elif first.lower() == "@names":
+                    if len(row) < 4:
+                        continue
+                    mode = row[2].strip().lower()
+                    if mode not in ("single", "random"):
+                        continue
+                    replacement_values = row[3].strip()
+                    for raw_name in row[1].split(","):
+                        name = raw_name.strip()
+                        if name:
+                            text_rules.append((name, mode, replacement_values))
                 else:
                     # Text rule: 2-col (search,replacement) or 3-col (search,mode,replacement)
                     if len(row) == 2:
