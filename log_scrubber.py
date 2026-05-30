@@ -56,7 +56,7 @@ Splunk SPL for exporting log samples (run in Splunk Web → export as CSV):
     index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
     | dedup punct | head 20
 
-Version: 1.3.1
+Version: 1.3.2
 Copyright (c) 2026 Machine Data Insights Inc.
 https://machinedatainsights.com
 """
@@ -73,7 +73,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 
 # ============================================================================

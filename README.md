@@ -4,7 +4,7 @@ version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 By Machine Data Insights. *There's Gold in That Data!®*  
 
-**[⬇ Download Paydirt v1.3.1](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
+**[⬇ Download Paydirt v1.3.2](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
 <center>
 <img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=675>
@@ -30,7 +30,7 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 
 ## Downloads
 
-**Latest release: [v1.3.1](https://github.com/machinedatainsights/paydirt/releases/latest)**
+**Latest release: [v1.3.2](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
 **The tool itself:**
 - [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - browser tool. Save, double-click to open, drop log files on it. No install required.
@@ -670,6 +670,10 @@ incorporate similar improvements into the canonical version when appropriate.
 
 ## Version History
 
+### v1.3.2
+- May 30, 2026
+- **Copy to clipboard**: each result card has a new **Copy** button, between Download and Report, that copies the scrubbed output straight to the clipboard - handy for pasting a sanitized snippet into a ticket, chat, or email without saving a file first. Uses the Clipboard API with a textarea fallback for `file://` origins, and briefly confirms with a green "Copied" state. Browser-only; `log_scrubber.py` is unchanged at the CLI level (it already writes to stdout).
+
 ### v1.3.1
 - May 25, 2026
 - **`@names` config directive**: a single config row expands into one text rule per listed name, so bulk personal-name scrubbing (e.g. an employee/contractor roster within a log sample) no longer needs one CSV row per name. Supports both `single` and `random` replacement modes, and the names list can be broken across lines inside its quoted field for readability. See the `@names` block in `log_scrubbing_config.csv` for examples.
@@ -712,4 +716,4 @@ incorporate similar improvements into the canonical version when appropriate.
 
 **Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
   
-*Version 1.3.1 - May 25, 2026*
+*Version 1.3.2 - May 30, 2026*

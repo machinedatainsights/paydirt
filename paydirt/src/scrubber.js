@@ -22,7 +22,7 @@
 // log_scrubber.py so a reader can cross-reference the two.
 // ============================================================================
 
-const PAYDIRT_VERSION = '1.3.1';
+const PAYDIRT_VERSION = '1.3.2';
 
 // ============================================================================
 // CUI Marking Detection (CMMC / NIST SP 800-171)

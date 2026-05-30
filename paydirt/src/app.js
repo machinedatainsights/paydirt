@@ -137,7 +137,7 @@
     // ----------------------------------------------------------------------
 
     function init() {
-        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.1');
+        dom.versionPill.textContent = 'v' + (window.Paydirt && window.Paydirt.version || '1.3.2');
         if (window.__PAYDIRT_BUILD__) {
             dom.buildPill.textContent = window.__PAYDIRT_BUILD__;
             dom.buildPill.hidden = false;
@@ -649,10 +649,28 @@
         // Wire up tab switching
         wireUpTabs(card);
 
-        // Wire up download + report + remove
+        // Wire up download + copy + report + remove
         card.querySelector('[data-action="download"]').addEventListener('click', () => {
             downloadText(scrubbed, buildScrubbedFilename(filename));
         });
+
+        // Copy the scrubbed text straight to the clipboard. Reuses
+        // copyTextToClipboard() - the same helper the SPL copy buttons use,
+        // with a textarea fallback for file:// origins - and briefly swaps the
+        // button label to confirm without disturbing its icon.
+        const copyBtn = card.querySelector('[data-action="copy"]');
+        const copyLabel = copyBtn.querySelector('.btn-label');
+        copyBtn.addEventListener('click', () => {
+            copyTextToClipboard(scrubbed).then(ok => {
+                copyLabel.textContent = ok ? 'Copied' : 'Copy failed';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyLabel.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            });
+        });
+
         const reportBtn = card.querySelector('[data-action="download-report"]');
         reportBtn.addEventListener('click', () => {
             generateAndDownloadReport(filename, original, scrubbed, reportBtn);
@@ -683,6 +701,8 @@
         panelsContainer.appendChild(errDiv);
         card.querySelector('.result-tabs').remove();
         card.querySelector('[data-action="download"]').remove();
+        const errCopyBtn = card.querySelector('[data-action="copy"]');
+        if (errCopyBtn) errCopyBtn.remove();
         const errReportBtn = card.querySelector('[data-action="download-report"]');
         if (errReportBtn) errReportBtn.remove();
         card.querySelector('[data-action="remove"]').addEventListener('click', () => {
@@ -1392,7 +1412,7 @@
                     report_schema: 1,
                     tool: {
                         name: 'Paydirt',
-                        version: (window.Paydirt && window.Paydirt.version) || '1.3.1',
+                        version: (window.Paydirt && window.Paydirt.version) || '1.3.2',
                         build: window.__PAYDIRT_BUILD__ || null,
                     },
                     generated_at_utc: now.toISOString(),
