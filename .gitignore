@@ -3,5 +3,4 @@ archive/
 paydirt/.last_build
 
 # Marketing / brand collateral - kept local, not published to the public repo
-docs/paydirt-info.html
-docs/paydirt-brochure-intro.html
+docs/marketing/
