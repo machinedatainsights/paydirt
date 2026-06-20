@@ -85,7 +85,8 @@ own environment. Keep the sourcetype filter specific in large deployments
 or the search can run for a very long time. The `earliest=-30d` window
 also avoids surfacing sourcetypes that no longer exist.
 
-Click **Export** -> choose **CSV** -> save the file (e.g., `sourcetypes.csv`).
+Click **Export** -> choose **CSV** -> save the file using the convention
+`<company>_<environment>_sourcetype_discovery.csv`.
 
 This lists each matching sourcetype with its indexes, sources, and event
 counts so you can pick a target for the next two searches. **Do not scrub
@@ -99,13 +100,14 @@ Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
-| fieldsummary maxvals=5
+| fieldsummary maxvals=10
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
   AND field!="splunk_server_group"
 ```
 
-Click **Export** -> choose **CSV** -> save the file (e.g., `guardduty_fields.csv`).
+Click **Export** -> choose **CSV** -> save the file using the convention
+`<company>_<environment>_<sourcetype>_fieldsummary.csv`.
 
 ### 3. Export Log Samples from Splunk Web
 
@@ -114,7 +116,8 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
 | dedup punct | head 20
 ```
 
-Click **Export** -> choose **CSV** -> save the file (e.g., `guardduty_samples.csv`).
+Click **Export** -> choose **CSV** -> save the file using the convention
+`<company>_<environment>_<sourcetype>_log-samples.csv`.
 
 **Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
 to capture *every* distinct event pattern. `dedup punct` already collapses

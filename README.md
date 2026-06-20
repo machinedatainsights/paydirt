@@ -128,7 +128,9 @@ with three searches:
   long as the result set stays a manageable size.
 
 Each block has a **Copy** button to drop the SPL into your clipboard with
-one click. The **Field-value samples** search has a `{sourcetype}`
+one click, and a **Save as** hint suggesting a filename convention
+(`<company>_<environment>_<sourcetype>_...csv`) so exports stay organized
+across environments. The **Field-value samples** search has a `{sourcetype}`
 placeholder to fill in; the **Log samples** search uses
 `index=* sourcetype=* source=*` and runs as-is - narrow those wildcards if
 your environment is large. Run the search in Splunk Web, click
@@ -273,7 +275,8 @@ own environment. Keep the sourcetype filter specific in large deployments
 or the search can run for a very long time. The `earliest=-30d` window
 also avoids surfacing sourcetypes that no longer exist.
 
-Click **Export** → choose **CSV** → save the file (e.g., `sourcetypes.csv`).
+Click **Export** → choose **CSV** → save the file using the convention
+`<company>_<environment>_sourcetype_discovery.csv`.
 
 This lists each matching sourcetype with its indexes, sources, and event
 counts so you can pick a target for the next two searches. **Do not scrub
@@ -287,13 +290,14 @@ Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
-| fieldsummary maxvals=5
+| fieldsummary maxvals=10
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
   AND field!="splunk_server_group"
 ```
 
-Click **Export** → choose **CSV** → save the file (e.g., `guardduty_fields.csv`).
+Click **Export** → choose **CSV** → save the file using the convention
+`<company>_<environment>_<sourcetype>_fieldsummary.csv`.
 
 ### 3. Export Log Samples from Splunk Web
 
@@ -302,7 +306,8 @@ index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
 | dedup punct | head 20
 ```
 
-Click **Export** → choose **CSV** → save the file (e.g., `guardduty_samples.csv`).
+Click **Export** → choose **CSV** → save the file using the convention
+`<company>_<environment>_<sourcetype>_log-samples.csv`.
 
 **Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
 to capture *every* distinct event pattern. `dedup punct` already
@@ -672,6 +677,9 @@ incorporate similar improvements into the canonical version when appropriate.
 ### v1.3.2
 - May 30, 2026
 - **Copy to clipboard**: each result card has a new **Copy** button, between Download and Report, that copies the scrubbed output straight to the clipboard - handy for pasting a sanitized snippet into a ticket, chat, or email without saving a file first. Uses the Clipboard API with a textarea fallback for `file://` origins, and briefly confirms with a green "Copied" state. Browser-only; `log_scrubber.py` is unchanged at the CLI level (it already writes to stdout).
+- **Build 2026062001** (June 20, 2026) - point-fix within v1.3.2:
+  - **SPL export filename hints**: each block in the *Splunk SPL for exporting samples* panel now shows a **Save as** suggestion (`<company>_<environment>_sourcetype_discovery.csv`, `..._<sourcetype>_fieldsummary.csv`, `..._<sourcetype>_log-samples.csv`) so exports stay consistently named across environments.
+  - **Wider field-value samples**: the *Field-value samples* helper now uses `| fieldsummary maxvals=10` (was `maxvals=5`) to surface more distinct values per field. Updated in the browser tool, `README.md`, and [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md).
 
 ### v1.3.1
 - May 25, 2026

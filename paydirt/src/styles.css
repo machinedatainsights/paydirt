@@ -460,6 +460,18 @@ button {
     font-weight: 600;
 }
 
+.spl-saveas {
+    margin: 4px 0 0;
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+}
+
+.spl-saveas code {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--color-text);
+}
+
 /* ---- Config section ------------------------------------------------------ */
 
 .config-status {

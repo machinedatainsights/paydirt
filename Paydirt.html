@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   Paydirt - Log Scrubber
-  Built: 2026-05-30 17:15:30
-  Build: 2026053002
+  Built: 2026-06-20 15:01:36
+  Build: 2026062001
   Machine Data Insights - machinedatainsights.com
 
   This file runs entirely in your browser.
@@ -499,6 +499,18 @@ button {
     color: #FCD34D;
     font-style: italic;
     font-weight: 600;
+}
+
+.spl-saveas {
+    margin: 4px 0 0;
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+}
+
+.spl-saveas code {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--color-text);
 }
 
 /* ---- Config section ------------------------------------------------------ */
@@ -1361,6 +1373,7 @@ button {
                     <pre class="spl-code"><code>| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
 | sort sourcetype</code></pre>
+                    <p class="spl-saveas">Save as: <code>&lt;company&gt;_&lt;environment&gt;_sourcetype_discovery.csv</code></p>
                 </div>
 
                 <div class="spl-block">
@@ -1370,10 +1383,11 @@ button {
                         <button type="button" class="spl-copy-btn" data-spl="fieldsummary" title="Copy SPL to clipboard">Copy</button>
                     </div>
                     <pre class="spl-code"><code>index=* sourcetype="<em>{sourcetype}</em>" earliest=-7d@d
-| fieldsummary maxvals=5
+| fieldsummary maxvals=10
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
   AND field!="splunk_server_group"</code></pre>
+                    <p class="spl-saveas">Save as: <code>&lt;company&gt;_&lt;environment&gt;_&lt;sourcetype&gt;_fieldsummary.csv</code></p>
                 </div>
 
                 <div class="spl-block">
@@ -1386,6 +1400,7 @@ button {
 | dedup punct
 | head 20
 | table index sourcetype source _raw</code></pre>
+                    <p class="spl-saveas">Save as: <code>&lt;company&gt;_&lt;environment&gt;_&lt;sourcetype&gt;_log-samples.csv</code></p>
                 </div>
             </div>
         </details>
@@ -1682,7 +1697,7 @@ john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.c
 # ============================================================================
 
 `;
-window.__PAYDIRT_BUILD__ = "2026053002";
+window.__PAYDIRT_BUILD__ = "2026062001";
 </script>
 <script>
 // SPDX-License-Identifier: Apache-2.0
