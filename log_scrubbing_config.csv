@@ -15,9 +15,21 @@
 #
 # Values containing commas MUST be quoted with double quotes.
 # Values with only colons or slashes (e.g. ARNs, URLs) do NOT need quoting.
+#
+# RULE ORDER MATTERS: text rules are applied top to bottom, and each rule acts
+# on the output of the rules above it. A broad rule earlier in the file can
+# "eat" the term a more specific rule below it was meant to catch - once the
+# broad rule rewrites the text, the specific rule's search term no longer
+# exists and it silently does nothing. So when two rules could match the same
+# substring, list the MORE SPECIFIC one FIRST. (See the ACME example below.)
+# This applies to text rules; @json rules are keyed by field name, not raw
+# substring, so they don't collide this way.
 # ============================================================================
 
 # Company names - customize for your organization
+# 'ACME Corp' is listed BEFORE the broader 'ACME' on purpose: if 'ACME' came
+# first it would turn "ACME Corp" into "COMP Corp", and the 'ACME Corp' rule
+# would never fire. Specific-before-broad keeps both working.
 ACME Corp,single,CompanyA
 ACME,single,COMP
 

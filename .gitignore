@@ -2,5 +2,8 @@ archive/
 .claude
 paydirt/.last_build
 
+# Claude Code session-handoff notes - kept local, not published
+CLAUDE.md
+
 # Marketing / brand collateral - kept local, not published to the public repo
 docs/marketing/

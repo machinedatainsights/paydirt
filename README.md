@@ -1,7 +1,9 @@
 # Paydirt + Log Scrubber 
-<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=60> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk or other log data exports so they can be mined for value. Drop a file, get a sanitized
+<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=60> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk® or other log data exports so they can be mined for value. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
-CMMC, HIPAA, and GDPR aware. Environment customizable.  By Machine Data Insights. *There's Gold in That Data!®*  
+CMMC, HIPAA, and GDPR aware. Environment customizable.  
+
+Paydirt was created and is used by Machine Data Insights as part of the CIM Normalization Pipeline - see the info page on the [Machine Data Insights](https://www.machinedatainsights.com/paydirt) website.   *There's Gold In That Data!®*  
 
 **[⬇ Download Paydirt v1.3.2](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
@@ -70,6 +72,82 @@ phone), GDPR (personal data including IPs and device identifiers).
 
 **No dependencies** beyond Python 3.9+ standard library for the CLI, and
 no dependencies at all for the browser tool (pure HTML/CSS/JS, runs offline).
+
+## Editing the Scrub Config
+
+Both tools read their rules from `log_scrubbing_config.csv` - a plain CSV you
+can edit in any text editor or spreadsheet. Each non-comment line is one rule;
+lines starting with `#` are ignored. This is a quick primer covering the
+everyday cases and one gotcha; the full reference is in
+[Configuration](#configuration) further down.
+
+### Text replacements
+
+The simplest rule replaces a literal string wherever it appears. The format is
+`search_term,mode,replacement`. Use `single` mode when the replacement is always
+the same:
+
+```csv
+# search_term,single,replacement
+ACME Corp,single,CompanyA
+```
+
+Use `random` mode to vary the replacement - each occurrence independently picks
+one value from the list. Any value that itself contains commas must be quoted:
+
+```csv
+john.doe@example.com,random,"user1@company.com,user2@company.com,user3@company.com"
+```
+
+### JSON field replacements
+
+Prefix a rule with `@json` to replace the *value* of a named field in JSON data,
+whatever that value happens to be. The simplest form is three columns
+(`@json,fieldName,replacement`):
+
+```csv
+@json,sourceIPAddress,10.0.0.x
+```
+
+For nested data you can use dot notation to target a field only under a specific
+parent, and `random` mode works here too:
+
+```csv
+# Match 'arn' only when nested under 'userIdentity' (not any other arn)
+@json,userIdentity.arn,arn:aws:iam::000000000000:user/REDACTED
+
+# Vary the value across occurrences
+@json,accountId,random,"000000000001,000000000002,000000000003"
+```
+
+### Rule order matters: specific before broad
+
+Text rules run **top to bottom**, and each rule is applied to the output of the
+rules above it. A broad rule earlier in the file can therefore "eat" the term a
+more specific rule below it was meant to catch - by the time the specific rule
+runs, its search term has already been rewritten and no longer exists in the
+text, so the specific rule silently does nothing.
+
+**Broken** - the broad `ACME` rule runs first and turns `ACME Corp` into
+`COMP Corp`, so the `ACME Corp` rule never matches:
+
+```csv
+ACME,single,COMP
+ACME Corp,single,CompanyA      # never fires - "ACME Corp" is already gone
+```
+
+**Fixed** - list the more specific rule first, so it claims its text before the
+broad rule sweeps up whatever remains:
+
+```csv
+ACME Corp,single,CompanyA      # matches first
+ACME,single,COMP               # then mops up any remaining bare "ACME"
+```
+
+The rule: whenever two text rules could match the same substring, order them
+**most specific → most general**. (`@json` field rules are keyed by field name
+rather than by raw substring, so they don't collide this way - this ordering
+concern applies to text-substitution rules.)
 
 ## Documentation
 
@@ -662,15 +740,15 @@ trademarks of Machine Data Insights Inc.
 
 ## Contributing
 
-This repository is published as-is. We welcome bug reports and feature
-suggestions via email at the address listed on
-[machinedatainsights.com](https://machinedatainsights.com), but **we do not
-accept pull requests** on the public repository. This is a deliberate policy
-to keep the project lightweight to maintain.
+This repository is published as-is. Bug reports and feature suggestions are
+welcome via email at [support@machinedatainsights.com](mailto:support@machinedatainsights.com),
+but **we do not accept pull requests** on the public repository. This is a
+deliberate policy to keep the project lightweight to maintain.
 
 If you'd like to share improvements, please feel free to fork the project
-and publish your version under a different name, and let us know - we may
-incorporate similar improvements into the canonical version when appropriate.
+and publish your version under a different name (see the `NOTICE` file), and
+let us know - I may incorporate similar improvements into the canonical
+version when appropriate.
 
 ## Version History
 
@@ -680,6 +758,9 @@ incorporate similar improvements into the canonical version when appropriate.
 - **Build 2026062001** (June 20, 2026) - point-fix within v1.3.2:
   - **SPL export filename hints**: each block in the *Splunk SPL for exporting samples* panel now shows a **Save as** suggestion (`<company>_<environment>_sourcetype_discovery.csv`, `..._<sourcetype>_fieldsummary.csv`, `..._<sourcetype>_log-samples.csv`) so exports stay consistently named across environments.
   - **Wider field-value samples**: the *Field-value samples* helper now uses `| fieldsummary maxvals=10` (was `maxvals=5`) to surface more distinct values per field. Updated in the browser tool, `README.md`, and [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md).
+- **Build 2026070301** (July 3, 2026) - docs point-fix within v1.3.2 (no scrubbing behavior change):
+  - **Config-editing primer**: new [Editing the Scrub Config](#editing-the-scrub-config) section near the top of the README covering simple/random text replacements, simple and nested `@json` replacements, and the **rule-order gotcha** (a broad rule earlier in the file can "eat" a more specific rule below it - order text rules most-specific-first).
+  - **Rule-order note in the config**: the same guidance is now called out in the comments of `log_scrubbing_config.csv` (and thus the inlined default config in `Paydirt.html`), next to the `ACME Corp` / `ACME` example that demonstrates it.
 
 ### v1.3.1
 - May 25, 2026
@@ -722,5 +803,6 @@ incorporate similar improvements into the canonical version when appropriate.
 ---
 
 **Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
+Splunk is a trademark of Cisco and/or its affiliates.  
   
 *Version 1.3.2 - May 30, 2026*
