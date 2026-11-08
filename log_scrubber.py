@@ -47,16 +47,16 @@ Usage (as a library):
 
 Splunk SPL for exporting field values (run in Splunk Web → export as CSV):
     index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
-    | fieldsummary maxvals=5
+    | fieldsummary maxvals=15
     | search field!="_*" AND field!="date_*" AND field!="linecount"
       AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
       AND field!="splunk_server_group"
 
 Splunk SPL for exporting log samples (run in Splunk Web → export as CSV):
     index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
-    | dedup punct | head 20
+    | dedup punct | head 30
 
-Version: 1.3.2
+Version: 1.3.3
 Copyright (c) 2026 Machine Data Insights Inc.
 https://machinedatainsights.com
 """
@@ -73,7 +73,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-__version__ = "1.3.2"
+__version__ = "1.3.3"
 
 
 # ============================================================================
@@ -1373,14 +1373,14 @@ Examples:
 
 Export SPL for fieldsummary (Splunk Web -> Export -> CSV):
   index=<idx> sourcetype="<st>" earliest=-7d@d latest=now
-  | fieldsummary maxvals=5
+  | fieldsummary maxvals=15
   | search field!="_*" AND field!="date_*" AND field!="linecount"
     AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
     AND field!="splunk_server_group"
 
 Export SPL for log samples (Splunk Web -> Export -> CSV):
   index=<idx> sourcetype="<st>" earliest=-1d@d latest=now
-  | dedup punct | head 20
+  | dedup punct | head 30
         """,
     )
 

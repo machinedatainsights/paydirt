@@ -74,16 +74,17 @@ If you don't already know which index and sourcetype to target, run this
 first against your Splunk metadata index:
 
 ```spl
-| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
+| tstats count where index=* AND sourcetype=* earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
 | sort sourcetype
 ```
 
-Replace `{sourcetype(s)}` with a specific sourcetype or wildcarded filter
-(e.g., `cisco:asa` or `cisco:*`) and adjust the `index=...` filter for your
-own environment. Keep the sourcetype filter specific in large deployments
-or the search can run for a very long time. The `earliest=-30d` window
-also avoids surfacing sourcetypes that no longer exist.
+As written it lists every sourcetype (`sourcetype=*`); narrow it to a
+specific sourcetype or wildcarded filter (e.g., `cisco:asa` or `cisco:*`) and
+adjust the `index=...` filter for your own environment. Keep the filter
+specific in large deployments or the search can run for a very long time.
+The `earliest=-30d` window also avoids surfacing sourcetypes that no longer
+exist.
 
 Click **Export** -> choose **CSV** -> save the file using the convention
 `<company>_<environment>_sourcetype_discovery.csv`.
@@ -100,7 +101,7 @@ Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
-| fieldsummary maxvals=10
+| fieldsummary maxvals=15
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
   AND field!="splunk_server_group"
@@ -113,17 +114,17 @@ Click **Export** -> choose **CSV** -> save the file using the convention
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
-| dedup punct | head 20
+| dedup punct | head 30
 ```
 
 Click **Export** -> choose **CSV** -> save the file using the convention
 `<company>_<environment>_<sourcetype>_log-samples.csv`.
 
-**Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
+**Tip:** consider dropping the `| head 30` cap (but keeping `| dedup punct`)
 to capture *every* distinct event pattern. `dedup punct` already collapses
 the result set to one event per unique punctuation shape, so the unbounded
 query usually returns only a few dozen to a few hundred rows - completely
-manageable for most sourcetypes. The 20-event cap can silently hide
+manageable for most sourcetypes. The 30-event cap can silently hide
 infrequent-but-important patterns (rare error variants, privileged-user
 actions, edge-case payloads), so for small or medium sourcetypes the
 unbounded form is often the better choice. Keep the cap for very
@@ -436,4 +437,4 @@ terms.
 
 **Machine Data Insights Inc.** *"There's Gold In That Data!"<sup>®</sup>* | [machinedatainsights.com](https://machinedatainsights.com)  
   
-*Version 1.3.2 - May 30, 2026*
+*Version 1.3.3 - November 8, 2026*

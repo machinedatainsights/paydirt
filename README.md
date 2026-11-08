@@ -1,14 +1,14 @@
 # Paydirt + Log Scrubber 
-<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=60> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk® or other log data exports so they can be mined for value. Drop a file, get a sanitized
+<img src="./assets/branding/paydirt-icon-2-256x256.png" alt="Paydirt icon" width=50> Paydirt is a self-contained browser tool plus matching Python CLI for scrubbing sensitive data from Splunk® or other log data exports so they can be mined for value. Drop a file, get a sanitized
 version - no install, no network calls, nothing leaves your machine.
 CMMC, HIPAA, and GDPR aware. Environment customizable.  
 
 Paydirt was created and is used by Machine Data Insights as part of the CIM Normalization Pipeline - see the info page on the [Machine Data Insights](https://www.machinedatainsights.com/paydirt) website.   *There's Gold In That Data!®*  
 
-**[⬇ Download Paydirt v1.3.2](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~120 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
+**[⬇ Download Paydirt v1.3.3](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html)** - browser tool, ~290 KB, runs offline. Save the file, double-click to open. [All files below ↓](#downloads)
 
 <center>
-<img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=675>
+<img src="./docs/images/paydirt-screenshot.png" alt="Paydirt screenshot" height=625>
 </center>
 
 *Paydirt's Comparison view shows original and scrubbed output side by side, with per-field highlighting that tells you exactly what changed.*
@@ -31,7 +31,7 @@ Validators run inside the matchers, so ordinary 10-to-19-digit numbers (order ID
 
 ## Downloads
 
-**Latest release: [v1.3.2](https://github.com/machinedatainsights/paydirt/releases/latest)**
+**Latest release: [v1.3.3](https://github.com/machinedatainsights/paydirt/releases/latest)**
 
 **The tool itself:**
 - [Paydirt.html](https://github.com/machinedatainsights/paydirt/releases/latest/download/Paydirt.html) - browser tool. Save, double-click to open, drop log files on it. No install required.
@@ -186,23 +186,24 @@ with three searches:
 
 - **Discover sourcetypes** (last 30 days) - uses `tstats` against the
   metadata index to list sourcetypes with their indexes, sources, and event
-  counts. The example filters on `index=_internal AND sourcetype=splunk_web*`
-  as a safe starting point - broaden the filter to match your environment,
-  but keep the filter specific in large deployments or the search can run
-  for a very long time. The 30-day window also avoids surfacing retired
-  sourcetypes. Run this first to pick a sourcetype for the other two
+  counts. The example uses `index=* AND sourcetype=*` to list everything as a
+  starting point - narrow the `index=...` and `sourcetype=...` filters to
+  match your environment, and keep them specific in large deployments or the
+  search can run for a very long time. The 30-day window also avoids
+  surfacing retired sourcetypes. Run this first to pick a sourcetype for the
+  other two
   searches; the export also doubles as the input for the Data Refinery
   *Sourcetype CSV* entry.
 - **Field-value samples** (last 7 days) - uses `fieldsummary` to extract
   the distinct values present in each field across a sourcetype, with the
   housekeeping fields filtered out. This is the right input for understanding
   the shape of your data and building CIM normalization rules.
-- **Log samples** (last 1 day) - uses `dedup punct | head 20` to grab a
+- **Log samples** (last 1 day) - uses `dedup punct | head 30` to grab a
   representative set of distinct event patterns. This is the right input
   for working with full event text, including any embedded JSON. For a
-  more complete picture you can drop the `| head 20` cap (keeping the
+  more complete picture you can drop the `| head 30` cap (keeping the
   `dedup punct`) so every distinct pattern is captured - useful when rare
-  events carry important data that the 20-event cap might exclude, as
+  events carry important data that the 30-event cap might exclude, as
   long as the result set stays a manageable size.
 
 Each block has a **Copy** button to drop the SPL into your clipboard with
@@ -342,16 +343,17 @@ If you don't already know which index and sourcetype you want, run this
 first against your Splunk metadata index:
 
 ```spl
-| tstats count where index=* AND sourcetype={sourcetype(s)} earliest=-30d BY sourcetype, index, source
+| tstats count where index=* AND sourcetype=* earliest=-30d BY sourcetype, index, source
 | stats values(index) as indexes, values(source) as sources, sum(count) as event_count by sourcetype
 | sort sourcetype
 ```
 
-Replace `{sourcetype(s)}` with a specific sourcetype or wildcarded filter
-(e.g., `cisco:asa` or `cisco:*`) and adjust the `index=...` filter for your
-own environment. Keep the sourcetype filter specific in large deployments
-or the search can run for a very long time. The `earliest=-30d` window
-also avoids surfacing sourcetypes that no longer exist.
+As written it lists every sourcetype (`sourcetype=*`); narrow it to a
+specific sourcetype or wildcarded filter (e.g., `cisco:asa` or `cisco:*`) and
+adjust the `index=...` filter for your own environment. Keep the filter
+specific in large deployments or the search can run for a very long time.
+The `earliest=-30d` window also avoids surfacing sourcetypes that no longer
+exist.
 
 Click **Export** → choose **CSV** → save the file using the convention
 `<company>_<environment>_sourcetype_discovery.csv`.
@@ -368,7 +370,7 @@ Run this SPL in Splunk Web (adjust index, sourcetype, and time range):
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-7d@d latest=now
-| fieldsummary maxvals=10
+| fieldsummary maxvals=15
 | search field!="_*" AND field!="date_*" AND field!="linecount"
   AND field!="punct" AND field!="timestartpos" AND field!="timeendpos"
   AND field!="splunk_server_group"
@@ -381,17 +383,17 @@ Click **Export** → choose **CSV** → save the file using the convention
 
 ```spl
 index=<your_index> sourcetype="<your_sourcetype>" earliest=-1d@d latest=now
-| dedup punct | head 20
+| dedup punct | head 30
 ```
 
 Click **Export** → choose **CSV** → save the file using the convention
 `<company>_<environment>_<sourcetype>_log-samples.csv`.
 
-**Tip:** consider dropping the `| head 20` cap (but keeping `| dedup punct`)
+**Tip:** consider dropping the `| head 30` cap (but keeping `| dedup punct`)
 to capture *every* distinct event pattern. `dedup punct` already
 collapses the result set to one event per unique punctuation shape, so
 the unbounded query usually returns only a few dozen to a few hundred
-rows - completely manageable for most sourcetypes. The 20-event cap can
+rows - completely manageable for most sourcetypes. The 30-event cap can
 silently hide infrequent-but-important patterns (rare error variants,
 privileged-user actions, edge-case payloads), so for small or medium
 sourcetypes the unbounded form is often the better choice. Keep the cap
@@ -752,6 +754,10 @@ version when appropriate.
 
 ## Version History
 
+### v1.3.3
+- November 8, 2026
+- **Wider sample-export SPL for better TA accuracy**: the three helper queries in the *Splunk SPL for exporting samples* panel were widened so the field-value and log samples a client sends to MDI carry enough variety to develop the most accurate CIM normalization TA possible, while keeping sample bulk manageable. *Discover sourcetypes* now uses `sourcetype=*` (lists every sourcetype as a starting point; narrow it to a specific or wildcarded sourcetype as needed), *Field-value samples* raises `| fieldsummary maxvals=10` to `maxvals=15` (more distinct values per field), and *Log samples* raises `| head 20` to `| head 30` (more event variety per sourcetype). Updated in the browser tool, `log_scrubber.py`, `README.md`, and [`docs/LOG_SCRUBBER_GUIDE.md`](docs/LOG_SCRUBBER_GUIDE.md).
+
 ### v1.3.2
 - May 30, 2026
 - **Copy to clipboard**: each result card has a new **Copy** button, between Download and Report, that copies the scrubbed output straight to the clipboard - handy for pasting a sanitized snippet into a ticket, chat, or email without saving a file first. Uses the Clipboard API with a textarea fallback for `file://` origins, and briefly confirms with a green "Copied" state. Browser-only; `log_scrubber.py` is unchanged at the CLI level (it already writes to stdout).
@@ -805,4 +811,4 @@ version when appropriate.
 **Machine Data Insights Inc.** *There's Gold In That Data!®* | [machinedatainsights.com](https://machinedatainsights.com)  
 Splunk is a trademark of Cisco and/or its affiliates.  
   
-*Version 1.3.2 - May 30, 2026*
+*Version 1.3.3 - November 8, 2026*

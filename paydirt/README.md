@@ -31,7 +31,7 @@ python3 paydirt/build.py
 
 Produces `Paydirt.html` at the project root. Inlines all CSS, JavaScript,
 and the bundled default config into a single self-contained HTML file
-(~120 KB). No external dependencies at build time beyond the Python
+(~290 KB). No external dependencies at build time beyond the Python
 standard library.
 
 ### Build numbers
